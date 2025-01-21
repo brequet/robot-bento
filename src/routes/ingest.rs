@@ -18,29 +18,28 @@ pub struct Metadata {
 pub struct UploadForm {
     #[multipart(limit = "500MB")]
     pub file: TempFile,
-    pub json: MpJson<Metadata>,
+    pub data: MpJson<Metadata>,
 }
 
 async fn upload_robot_file(MultipartForm(form): MultipartForm<UploadForm>) -> impl Responder {
-    format!(
+    print!(
         "Uploaded file {}, with size: {}",
-        form.json.name, form.file.size
-    )
+        form.data.name, form.file.size
+    );
 
-    // let upload_dir = "./uploads";
+    let upload_dir = "./uploads";
 
-    // if let Err(e) = std::fs::create_dir_all(upload_dir) {
-    //     return HttpResponse::InternalServerError()
-    //         .body(format!("Failed to create upload directory: {}", e));
-    // }
+    if let Err(e) = std::fs::create_dir_all(upload_dir) {
+        return HttpResponse::InternalServerError()
+            .body(format!("Failed to create upload directory: {}", e));
+    }
 
-    // let file_name = form.file.file_name.unwrap_or_else(|| "uploaded.xml".into());
-    // let dest_path: PathBuf = [upload_dir, &file_name].iter().collect();
+    let file_name = form.file.file_name.unwrap_or_else(|| "uploaded.xml".into());
+    let dest_path: PathBuf = [upload_dir, &file_name].iter().collect();
 
-    // if let Err(e) = form.file.persist(&dest_path) {
-    //     return HttpResponse::InternalServerError()
-    //         .body(format!("Failed to save uploaded file: {}", e));
-    // }
+    if let Err(e) = form.file.file.persist(&dest_path) {
+        return HttpResponse::InternalServerError().body(format!("Failed to save the file: {}", e));
+    }
 
-    // HttpResponse::BadRequest().body("No valid XML file found in the request.")
+    HttpResponse::Ok().body("File uploaded successfully.")
 }

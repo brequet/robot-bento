@@ -1,6 +1,7 @@
 use actix_multipart::{form::MultipartFormConfig, MultipartError};
 use actix_web::{App, Error, HttpRequest, HttpServer};
 mod config;
+mod handlers;
 mod routes;
 
 #[actix_web::main]
