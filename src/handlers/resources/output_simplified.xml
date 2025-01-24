@@ -60,5 +60,8 @@
 		</suite>
 	</statistics>
 	<errors>
+		<msg timestamp="20250115 10:52:56.694" level="WARN">Keyword 'DatabaseLibrary.Row Count Is Greater Than X' is deprecated. Use new `Check Row Count` keyword with assertion engine instead.
+The deprecated keyword will be removed in future versions.</msg>
+		<msg timestamp="20250115 13:34:58.150" level="WARN">Overwriting not closed connection.</msg>
 	</errors>
 </robot>

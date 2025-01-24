@@ -12,7 +12,8 @@ struct TestRun {
     suites: Vec<Suite>,
     #[serde(rename = "statistics")]
     statistics: Statistics,
-    // TODO tag 'errors'
+    #[serde(rename = "errors")]
+    errors: Errors,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -42,7 +43,7 @@ struct Keyword {
     #[serde(rename = "if")]
     if_: Option<If>,
     #[serde(rename = "msg")]
-    msg: Option<KeywordMessage>,
+    msg: Option<Message>,
     #[serde(rename = "arg")]
     arg: Option<String>,
     #[serde(rename = "tag")]
@@ -84,7 +85,7 @@ struct Status {
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
-struct KeywordMessage {
+struct Message {
     #[serde(rename = "@timestamp")]
     timestamp: String,
     #[serde(rename = "@level")]
@@ -149,8 +150,16 @@ struct StatisticsSuiteTag {
     text: String,
 }
 
+#[derive(Debug, Deserialize, PartialEq)]
+struct Errors {
+    #[serde(rename = "msg")]
+    messages: Vec<Message>,
+}
+
 #[cfg(test)]
 mod tests {
+    use quick_xml::errors;
+
     use super::*;
 
     #[test]
@@ -230,5 +239,10 @@ mod tests {
         assert_eq!(suite_stats[0].id, "s1");
         assert_eq!(suite_stats[0].name, "Acceptance");
         assert_eq!(suite_stats[0].text, "Acceptance");
+
+        let errors = &test_run.errors;
+        assert_eq!(errors.messages.len(), 2);
+        assert_eq!(errors.messages[0].timestamp, "20250115 10:52:56.694");
+        assert_eq!(errors.messages[0].level, "WARN");
     }
 }
