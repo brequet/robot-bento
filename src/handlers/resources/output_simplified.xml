@@ -6,6 +6,7 @@
 				<branch type="IF" condition="not ${SCREENSHOT NEEDED}">
 					<kw name="Register Keyword To Run On Failure" library="Browser">
 						<msg timestamp="20241217 11:27:26.201" level="INFO">Keyword will not be run on failure.</msg>
+						<var>${dummyVar}</var>
 						<arg>${None}</arg>
 						<tag>Config</tag>
 						<doc>Sets the keyword to execute, when a Browser keyword fails.</doc>
@@ -25,6 +26,24 @@
 			</kw>
 			<status status="PASS" starttime="20241217 11:37:58.205" endtime="20241217 11:37:58.211"/>
 		</kw>
+		<suite id="s1-s1" name="Cat 1" source="D:\Cat 1">
+			<suite id="s1-s1-s1" name="History" source="D:\history.robot">
+				<test id="s1-s1-s1-t1" name="History Test" line="11">
+					<kw name="Get Current Date" library="DateTime">
+						<msg timestamp="20241217 11:37:05.764" level="INFO">${currentDateTime} = 2024-12-17 11:37:05.764</msg>
+						<var>${currentDateTime}</var>
+						<doc>Returns current local or UTC time with an optional increment.</doc>
+						<status status="PASS" starttime="20241217 11:37:05.763" endtime="20241217 11:37:05.764"/>
+					</kw>
+					<doc>The aim of this test is to do something</doc>
+					<tag>Regression</tag>
+					<tag>1324</tag>
+					<status status="PASS" starttime="20241217 11:32:57.308" endtime="20241217 11:33:07.942"/>
+				</test>
+				<status status="FAIL" starttime="20241217 11:27:23.679" endtime="20241217 11:37:58.211"/>
+			</suite>
+			<status status="FAIL" starttime="20241217 11:27:23.679" endtime="20241217 11:37:58.211"/>
+		</suite>
 		<status status="FAIL" starttime="20241217 11:27:23.679" endtime="20241217 11:37:58.211"/>
 	</suite>
 	<statistics>

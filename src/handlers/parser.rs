@@ -24,6 +24,28 @@ struct Suite {
     name: String,
     #[serde(rename = "@source")]
     source_file: String,
+    #[serde(rename = "suite")]
+    suites: Option<Vec<Suite>>,
+    #[serde(rename = "kw")]
+    keywords: Option<Vec<Keyword>>,
+    #[serde(rename = "test")]
+    tests: Option<Vec<Test>>,
+    #[serde(rename = "status")]
+    status: Status,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+struct Test {
+    #[serde(rename = "@id")]
+    id: String,
+    #[serde(rename = "@name")]
+    name: String,
+    #[serde(rename = "@line")]
+    line: String,
+    #[serde(rename = "doc")]
+    doc: Option<String>,
+    #[serde(rename = "tag")]
+    tags: Option<Vec<String>>,
     #[serde(rename = "kw")]
     keywords: Vec<Keyword>,
     #[serde(rename = "status")]
@@ -45,9 +67,11 @@ struct Keyword {
     #[serde(rename = "msg")]
     msg: Option<Message>,
     #[serde(rename = "arg")]
-    arg: Option<String>,
+    args: Option<Vec<String>>,
+    #[serde(rename = "var")]
+    var: Option<String>,
     #[serde(rename = "tag")]
-    tag: Option<Vec<String>>,
+    tags: Option<Vec<String>>,
     #[serde(rename = "doc")]
     doc: Option<String>,
     #[serde(rename = "status")]
@@ -186,8 +210,25 @@ mod tests {
         assert_eq!(suite.source_file, r"D:\robot-run\tests\acceptance");
         assert_eq!(suite.status.status, "FAIL");
         assert_eq!(suite.status.start_time, "20241217 11:27:23.679");
+        {
+            let suite_s1_s1 = &suite.suites.as_ref().unwrap()[0];
+            assert_eq!(suite_s1_s1.id, "s1-s1");
 
-        let first_kw = &suite.keywords[0];
+            let suite_s1_s1_s1 = &suite_s1_s1.suites.as_ref().unwrap()[0];
+            assert_eq!(suite_s1_s1_s1.id, "s1-s1-s1");
+
+            let test_s1_s1_s1_t1 = &suite_s1_s1_s1.tests.as_ref().unwrap()[0];
+            assert_eq!(test_s1_s1_s1_t1.id, "s1-s1-s1-t1");
+            assert_eq!(test_s1_s1_s1_t1.name, "History Test");
+            assert_eq!(
+                test_s1_s1_s1_t1.doc.as_ref().unwrap(),
+                "The aim of this test is to do something"
+            );
+            assert_eq!(test_s1_s1_s1_t1.tags.as_ref().unwrap().len(), 2);
+            assert_eq!(test_s1_s1_s1_t1.status.status, "PASS");
+        }
+
+        let first_kw = &suite.keywords.as_ref().unwrap()[0];
         assert_eq!(first_kw.name, "Acceptance Setup");
         assert_eq!(first_kw.library, "init-keywords");
         assert_eq!(first_kw.type_.as_ref().unwrap(), "SETUP");
@@ -206,8 +247,9 @@ mod tests {
                 kw.msg.as_ref().unwrap().value,
                 "Keyword will not be run on failure."
             );
-            assert_eq!(kw.arg.as_ref().unwrap(), "${None}");
-            assert_eq!(kw.tag.as_ref().unwrap()[0], "Config");
+            assert_eq!(kw.var.as_ref().unwrap(), "${dummyVar}");
+            assert_eq!(kw.args.as_ref().unwrap()[0], "${None}");
+            assert_eq!(kw.tags.as_ref().unwrap()[0], "Config");
             assert_eq!(
                 kw.doc.as_ref().unwrap(),
                 "Sets the keyword to execute, when a Browser keyword fails."
