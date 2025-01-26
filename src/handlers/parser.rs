@@ -1,8 +1,11 @@
-use quick_xml::de::from_str;
-use serde::Deserialize;
+use quick_xml::{
+    de::{from_str, Deserializer},
+    DeError,
+};
+use serde::{Deserialize, Serialize};
 use std::fs;
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct TestRun {
     #[serde(rename = "@generator")]
     generator: String,
@@ -16,7 +19,7 @@ struct TestRun {
     errors: Errors,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct Suite {
     #[serde(rename = "@id")]
     id: String,
@@ -26,15 +29,13 @@ struct Suite {
     source_file: String,
     #[serde(rename = "suite")]
     suites: Option<Vec<Suite>>,
-    #[serde(rename = "kw")]
-    keywords: Option<Vec<Keyword>>,
-    #[serde(rename = "test")]
-    tests: Option<Vec<Test>>,
     #[serde(rename = "status")]
     status: Status,
+    #[serde(rename = "$value")]
+    keywords: Option<Vec<KeywordOrIfOrFor>>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct Test {
     #[serde(rename = "@id")]
     id: String,
@@ -52,33 +53,33 @@ struct Test {
     status: Status,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct Keyword {
     #[serde(rename = "@name")]
     name: String,
     #[serde(rename = "@library")]
-    library: String,
+    library: Option<String>,
     #[serde(rename = "@type")]
     type_: Option<String>,
-    #[serde(rename = "kw")]
-    keywords: Option<Vec<Keyword>>,
-    #[serde(rename = "if")]
-    if_: Option<If>,
     #[serde(rename = "msg")]
-    msg: Option<Message>,
+    msg: Option<Vec<Message>>,
     #[serde(rename = "arg")]
     args: Option<Vec<String>>,
     #[serde(rename = "var")]
-    var: Option<String>,
+    var: Option<Vec<String>>,
     #[serde(rename = "tag")]
     tags: Option<Vec<String>>,
     #[serde(rename = "doc")]
     doc: Option<String>,
     #[serde(rename = "status")]
     status: Option<Status>,
+    #[serde(rename = "return")]
+    return_: Option<Return>,
+    #[serde(rename = "$value")]
+    keywords_or_ifs_or_fors: Option<Vec<KeywordOrIfOrFor>>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct If {
     #[serde(rename = "branch")]
     branch: Vec<Branch>,
@@ -86,19 +87,73 @@ struct If {
     status: Status,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+enum KeywordOrIfOrFor {
+    #[serde(rename = "kw")]
+    Keyword(Keyword),
+    #[serde(rename = "if")]
+    If(If),
+    #[serde(rename = "for")]
+    For(For),
+    #[serde(rename = "test")]
+    Test(Test),
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct Branch {
     #[serde(rename = "@type")]
     type_: String,
     #[serde(rename = "@condition")]
-    condition: String,
+    condition: Option<String>,
     #[serde(rename = "kw")]
-    keyword: Keyword,
+    keyword: Option<Vec<Keyword>>,
+    #[serde(rename = "status")]
+    status: Status,
+    #[serde(rename = "return")]
+    return_: Option<Return>,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+struct For {
+    #[serde(rename = "@flavor")]
+    flavor: String,
+    #[serde(rename = "iter")]
+    iters: Vec<Iter>,
+    #[serde(rename = "value")]
+    values: Vec<String>,
+    #[serde(rename = "var")]
+    vars: Vec<String>,
     #[serde(rename = "status")]
     status: Status,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+struct Iter {
+    #[serde(rename = "status")]
+    status: Status,
+    #[serde(rename = "var")]
+    vars: Vec<IterVar>,
+    #[serde(rename = "$value")]
+    keywords_or_ifs_or_fors: Option<Vec<KeywordOrIfOrFor>>,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+struct IterVar {
+    #[serde(rename = "@name")]
+    name: String,
+    #[serde(rename = "$text")]
+    value: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+struct Return {
+    #[serde(rename = "status")]
+    status: Status,
+    #[serde(rename = "value")]
+    value: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct Status {
     #[serde(rename = "@status")]
     status: String,
@@ -108,7 +163,7 @@ struct Status {
     end_time: String,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct Message {
     #[serde(rename = "@timestamp")]
     timestamp: String,
@@ -118,7 +173,7 @@ struct Message {
     value: String,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct Statistics {
     #[serde(rename = "total")]
     total: StatisticsTotal,
@@ -128,25 +183,25 @@ struct Statistics {
     suites: StatisticsSuites,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct StatisticsTotal {
     #[serde(rename = "stat")]
     stats: StatisticsTag,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct StatisticsTags {
     #[serde(rename = "stat")]
     stats: Vec<StatisticsTag>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct StatisticsSuites {
     #[serde(rename = "stat")]
     stats: Vec<StatisticsSuiteTag>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct StatisticsTag {
     #[serde(rename = "@pass")]
     pass: u32,
@@ -158,7 +213,7 @@ struct StatisticsTag {
     text: String,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct StatisticsSuiteTag {
     #[serde(rename = "@pass")]
     pass: u32,
@@ -174,32 +229,54 @@ struct StatisticsSuiteTag {
     text: String,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 struct Errors {
     #[serde(rename = "msg")]
     messages: Vec<Message>,
 }
 
+pub fn from_str_custom<'de, T>(s: &'de str) -> Result<T, DeError>
+where
+    T: Deserialize<'de>,
+{
+    let mut de = Deserializer::from_str(s);
+    match T::deserialize(&mut de) {
+        Ok(value) => Ok(value),
+        Err(err) => {
+            println!("something happened: {:?}", err);
+            de.is_empty();
+            Err(err)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use core::panic;
+
     use quick_xml::errors;
 
     use super::*;
 
     #[test]
     fn test_parse_xml() {
-        let file_path = "src/handlers/resources/output_simplified.xml";
+        // TODO: test and kw in same enum
+        let file_path = "robot-data-sample/8-tests-1-ko/output.xml";
+        // let file_path = "src/handlers/resources/output_simplified.xml";
         let xml_content = fs::read_to_string(file_path).expect("Unable to read file");
-        let result: Result<TestRun, _> = from_str(&xml_content);
+        let result: Result<TestRun, _> = from_str_custom(&xml_content);
 
         match result {
             Ok(ref parsed) => println!("{:?}", parsed),
-            Err(err) => panic!("Failed to parse XML: {}", err),
+            Err(err) => panic!("Failed to parse XML: {:?}", err),
         }
 
         assert!(result.is_ok());
 
         let test_run = result.unwrap();
+        let json = serde_json::to_string_pretty(&test_run).unwrap();
+        println!("{}", json);
+
         assert_eq!(test_run.generator, "Robot 7.1 (Python 3.10.4 on win32)");
         assert_eq!(test_run.generated_date, "20241217 11:27:23.676");
         assert_eq!(test_run.suites.len(), 1);
@@ -210,55 +287,104 @@ mod tests {
         assert_eq!(suite.source_file, r"D:\robot-run\tests\acceptance");
         assert_eq!(suite.status.status, "FAIL");
         assert_eq!(suite.status.start_time, "20241217 11:27:23.679");
+
+        let suite_s1_s1 = &suite.suites.as_ref().unwrap()[0];
+        assert_eq!(suite_s1_s1.id, "s1-s1");
+
+        let suite_s1_s1_s1 = &suite_s1_s1.suites.as_ref().unwrap()[0];
+        assert_eq!(suite_s1_s1_s1.id, "s1-s1-s1");
         {
-            let suite_s1_s1 = &suite.suites.as_ref().unwrap()[0];
-            assert_eq!(suite_s1_s1.id, "s1-s1");
-
-            let suite_s1_s1_s1 = &suite_s1_s1.suites.as_ref().unwrap()[0];
-            assert_eq!(suite_s1_s1_s1.id, "s1-s1-s1");
-
-            let test_s1_s1_s1_t1 = &suite_s1_s1_s1.tests.as_ref().unwrap()[0];
-            assert_eq!(test_s1_s1_s1_t1.id, "s1-s1-s1-t1");
-            assert_eq!(test_s1_s1_s1_t1.name, "History Test");
-            assert_eq!(
-                test_s1_s1_s1_t1.doc.as_ref().unwrap(),
-                "The aim of this test is to do something"
-            );
-            assert_eq!(test_s1_s1_s1_t1.tags.as_ref().unwrap().len(), 2);
-            assert_eq!(test_s1_s1_s1_t1.status.status, "PASS");
+            if let KeywordOrIfOrFor::Test(test_s1_s1_s1_t1) =
+                &suite_s1_s1_s1.keywords.as_ref().unwrap()[1]
+            {
+                assert_eq!(test_s1_s1_s1_t1.id, "s1-s1-s1-t1");
+                assert_eq!(test_s1_s1_s1_t1.name, "History Test");
+                assert_eq!(
+                    test_s1_s1_s1_t1.doc.as_ref().unwrap(),
+                    "The aim of this test is to do something"
+                );
+                assert_eq!(test_s1_s1_s1_t1.tags.as_ref().unwrap().len(), 2);
+                assert_eq!(test_s1_s1_s1_t1.status.status, "PASS");
+            } else {
+                panic!("Expected a Test, but got something else");
+            }
         }
 
-        let first_kw = &suite.keywords.as_ref().unwrap()[0];
-        assert_eq!(first_kw.name, "Acceptance Setup");
-        assert_eq!(first_kw.library, "init-keywords");
-        assert_eq!(first_kw.type_.as_ref().unwrap(), "SETUP");
-        {
-            let if_ = &first_kw.if_.as_ref().unwrap();
-            assert_eq!(if_.branch.len(), 1);
+        if let KeywordOrIfOrFor::Keyword(first_kw) = &suite.keywords.as_ref().unwrap()[0] {
+            assert_eq!(first_kw.name, "Acceptance Setup");
+            assert_eq!(first_kw.library.as_ref().unwrap(), "init-keywords");
+            assert_eq!(first_kw.type_.as_ref().unwrap(), "SETUP");
 
-            let branch = &if_.branch[0];
-            assert_eq!(branch.type_, "IF");
-            assert_eq!(branch.condition, "not ${SCREENSHOT NEEDED}");
+            let first_kw_base_kw = first_kw.keywords_or_ifs_or_fors.as_ref().unwrap();
+            assert_eq!(first_kw_base_kw.len(), 4);
 
-            let kw = &branch.keyword;
-            assert_eq!(kw.name, "Register Keyword To Run On Failure");
-            assert_eq!(kw.msg.as_ref().unwrap().timestamp, "20241217 11:27:26.201");
-            assert_eq!(
-                kw.msg.as_ref().unwrap().value,
-                "Keyword will not be run on failure."
-            );
-            assert_eq!(kw.var.as_ref().unwrap(), "${dummyVar}");
-            assert_eq!(kw.args.as_ref().unwrap()[0], "${None}");
-            assert_eq!(kw.tags.as_ref().unwrap()[0], "Config");
-            assert_eq!(
-                kw.doc.as_ref().unwrap(),
-                "Sets the keyword to execute, when a Browser keyword fails."
-            );
+            if let KeywordOrIfOrFor::Keyword(kw_with_for) = &first_kw_base_kw[0] {
+                if let KeywordOrIfOrFor::For(for_kw) =
+                    &kw_with_for.keywords_or_ifs_or_fors.as_ref().unwrap()[0]
+                {
+                    assert_eq!(for_kw.flavor, "IN");
+                    assert_eq!(for_kw.iters.len(), 2);
+                    assert_eq!(for_kw.vars.len(), 2);
+                    assert_eq!(for_kw.vars[0], "${aVar}");
+                    assert_eq!(for_kw.values[0], "@{aList}");
+                    assert_eq!(for_kw.values[1], "0");
 
-            let if_status = &if_.status;
-            assert_eq!(if_status.status, "PASS");
+                    let first_iter = &for_kw.iters[0];
+                    assert_eq!(first_iter.vars.len(), 2);
+                    assert_eq!(first_iter.vars[0].name, "${aVar}");
+                    assert!(first_iter.vars[0].value.is_none());
+
+                    let first_iter_kws = &first_iter.keywords_or_ifs_or_fors.as_ref().unwrap();
+                    assert_eq!(first_iter_kws.len(), 1);
+                } else {
+                    panic!("Expected a For, but got something else");
+                }
+            } else {
+                panic!("Expected a Keyword, but got something else");
+            }
+
+            if let KeywordOrIfOrFor::If(if_) = &first_kw_base_kw[1] {
+                assert_eq!(if_.branch.len(), 2);
+
+                let first_branch = &if_.branch[0];
+                assert_eq!(first_branch.type_, "IF");
+                assert_eq!(
+                    first_branch.condition.as_ref().unwrap(),
+                    "not ${SCREENSHOT NEEDED}"
+                );
+
+                let kw = &first_branch.keyword.as_ref().unwrap()[0];
+                assert_eq!(kw.name, "Register Keyword To Run On Failure");
+                assert_eq!(
+                    kw.msg.as_ref().unwrap()[0].timestamp,
+                    "20241217 11:27:26.201"
+                );
+                assert_eq!(
+                    kw.msg.as_ref().unwrap()[0].value,
+                    "Keyword will not be run on failure."
+                );
+                assert_eq!(kw.var.as_ref().unwrap()[0], "${dummyVar}");
+                assert_eq!(kw.args.as_ref().unwrap()[0], "${None}");
+                assert_eq!(kw.tags.as_ref().unwrap()[0], "Config");
+                assert_eq!(
+                    kw.doc.as_ref().unwrap(),
+                    "Sets the keyword to execute, when a Browser keyword fails."
+                );
+
+                let if_status = &if_.status;
+                assert_eq!(if_status.status, "PASS");
+            } else {
+                panic!("Expected an If, but got something else");
+            }
+
+            assert_eq!(first_kw.status.as_ref().unwrap().status, "PASS");
+
+            let first_kw_return = &first_kw.return_.as_ref().unwrap();
+            assert_eq!(first_kw_return.value, "${response}");
+            assert_eq!(first_kw_return.status.status, "PASS");
+        } else {
+            panic!("Expected a Keyword, but got something else");
         }
-        assert_eq!(first_kw.status.as_ref().unwrap().status, "PASS");
 
         let total_stats = &test_run.statistics.total.stats;
         assert_eq!(total_stats.pass, 7);
