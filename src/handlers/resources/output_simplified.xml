@@ -70,6 +70,49 @@
 			</kw>
 			<if>
 				<branch type="IF" condition="'${expected_status}' == 'any'">
+					<kw name="Close Browser" library="Browser">
+						<msg timestamp="20241217 11:37:58.211" level="INFO">Closed all browsers</msg>
+						<arg>ALL</arg>
+						<tag>BrowserControl</tag>
+						<tag>Setter</tag>
+						<doc>Closes the current browser.</doc>
+						<status status="PASS" starttime="20241217 11:37:58.206" endtime="20241217 11:37:58.211"/>
+					</kw>
+					<for flavor="IN">
+						<iter>
+							<kw name="Continue For Loop If" library="BuiltIn">
+								<arg>('${aVar}[aList]' == '${aVar}[anotherList]')</arg>
+								<doc>Skips the current FOR loop iteration if the ``condition`` is true.</doc>
+								<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.885"/>
+							</kw>
+							<var name="${aVar}"/>
+							<var name="${anId}"/>
+							<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.886"/>
+						</iter>
+						<iter>
+							<kw name="Continue For Loop If" library="BuiltIn">
+								<arg>('${aVar}[aList]' == '${aVar}[anotherList]')</arg>
+								<doc>Skips the current FOR loop iteration if the ``condition`` is true.</doc>
+								<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.885"/>
+							</kw>
+							<var name="${aVar}"/>
+							<var name="${anId}"/>
+							<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.886"/>
+						</iter>
+						<var>${aVar}</var>
+						<var>${anId}</var>
+						<value>@{aList}</value>
+						<value>0</value>
+						<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.886"/>
+					</for>
+					<kw name="Close Browser" library="Browser">
+						<msg timestamp="20241217 11:37:58.211" level="INFO">Closed all browsers</msg>
+						<arg>ALL</arg>
+						<tag>BrowserControl</tag>
+						<tag>Setter</tag>
+						<doc>Closes the current browser.</doc>
+						<status status="PASS" starttime="20241217 11:37:58.206" endtime="20241217 11:37:58.211"/>
+					</kw>
 					<return>
 						<value>${response}</value>
 						<status status="NOT RUN" starttime="20241217 11:27:26.274" endtime="20241217 11:27:26.274"/>

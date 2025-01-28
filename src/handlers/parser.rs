@@ -30,7 +30,7 @@ struct Suite {
     #[serde(rename = "status")]
     status: Status,
     #[serde(rename = "$value", default)]
-    suite_children: Vec<SuiteChildren>,
+    children: Vec<SuiteChildren>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -84,7 +84,7 @@ struct Keyword {
     #[serde(rename = "return")]
     return_: Option<Return>,
     #[serde(rename = "$value", default)]
-    keyword_children: Vec<KeywordChildren>,
+    children: Vec<KeywordChildren>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -113,12 +113,12 @@ struct Branch {
     type_: String,
     #[serde(rename = "@condition")]
     condition: Option<String>,
-    #[serde(rename = "kw", default)]
-    keyword: Vec<Keyword>,
     #[serde(rename = "status")]
     status: Status,
     #[serde(rename = "return")]
     return_: Option<Return>,
+    #[serde(rename = "$value", default)]
+    children: Vec<KeywordChildren>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -142,7 +142,7 @@ struct Iter {
     #[serde(rename = "var", default)]
     vars: Vec<IterVar>,
     #[serde(rename = "$value", default)]
-    keyword_children: Vec<KeywordChildren>,
+    children: Vec<KeywordChildren>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -269,6 +269,7 @@ mod tests {
     #[test]
     fn test_parse_xml() {
         // TODO: test and kw in same enum
+        // TODO: handle <continue> tag
         // let file_path = "robot-data-sample/8-tests-1-ko/output.xml";
         let file_path = "src/handlers/resources/output_simplified.xml";
         let xml_content = fs::read_to_string(file_path).expect("Unable to read file");
@@ -297,14 +298,13 @@ mod tests {
         assert_eq!(suite.status.status, "FAIL");
         assert_eq!(suite.status.start_time, "20241217 11:27:23.679");
 
-        if let SuiteChildren::Suite(suite_s1_s1) = &suite.suite_children[1] {
+        if let SuiteChildren::Suite(suite_s1_s1) = &suite.children[1] {
             assert_eq!(suite_s1_s1.id, "s1-s1");
 
-            if let SuiteChildren::Suite(suite_s1_s1_s1) = &suite_s1_s1.suite_children[0] {
+            if let SuiteChildren::Suite(suite_s1_s1_s1) = &suite_s1_s1.children[0] {
                 assert_eq!(suite_s1_s1_s1.id, "s1-s1-s1");
                 {
-                    if let SuiteChildren::Test(test_s1_s1_s1_t1) = &suite_s1_s1_s1.suite_children[1]
-                    {
+                    if let SuiteChildren::Test(test_s1_s1_s1_t1) = &suite_s1_s1_s1.children[1] {
                         assert_eq!(test_s1_s1_s1_t1.id, "s1-s1-s1-t1");
                         assert_eq!(test_s1_s1_s1_t1.name, "History Test");
                         assert_eq!(
@@ -323,16 +323,16 @@ mod tests {
         } else {
             panic!("Expected a Suite, but got something else");
         }
-        if let SuiteChildren::Keyword(first_kw) = &suite.suite_children[0] {
+        if let SuiteChildren::Keyword(first_kw) = &suite.children[0] {
             assert_eq!(first_kw.name, "Acceptance Setup");
             assert_eq!(first_kw.library.as_ref().unwrap(), "init-keywords");
             assert_eq!(first_kw.type_.as_ref().unwrap(), "SETUP");
 
-            let first_kw_base_kw = &first_kw.keyword_children;
+            let first_kw_base_kw = &first_kw.children;
             assert_eq!(first_kw_base_kw.len(), 4);
 
             if let KeywordChildren::Keyword(kw_with_for) = &first_kw_base_kw[0] {
-                if let KeywordChildren::For(for_kw) = &kw_with_for.keyword_children[0] {
+                if let KeywordChildren::For(for_kw) = &kw_with_for.children[0] {
                     assert_eq!(for_kw.flavor, "IN");
                     assert_eq!(for_kw.iters.len(), 2);
                     assert_eq!(for_kw.vars.len(), 2);
@@ -345,7 +345,7 @@ mod tests {
                     assert_eq!(first_iter.vars[0].name, "${aVar}");
                     assert!(first_iter.vars[0].value.is_none());
 
-                    let first_iter_kws = &first_iter.keyword_children;
+                    let first_iter_kws = &first_iter.children;
                     assert_eq!(first_iter_kws.len(), 1);
                 } else {
                     panic!("Expected a For, but got something else");
@@ -364,17 +364,20 @@ mod tests {
                     "not ${SCREENSHOT NEEDED}"
                 );
 
-                let kw = &first_branch.keyword[0];
-                assert_eq!(kw.name, "Register Keyword To Run On Failure");
-                assert_eq!(kw.msg[0].timestamp, "20241217 11:27:26.201");
-                assert_eq!(kw.msg[0].value, "Keyword will not be run on failure.");
-                assert_eq!(kw.var[0], "${dummyVar}");
-                assert_eq!(kw.args[0], "${None}");
-                assert_eq!(kw.tags[0], "Config");
-                assert_eq!(
-                    kw.doc.as_ref().unwrap(),
-                    "Sets the keyword to execute, when a Browser keyword fails."
-                );
+                if let KeywordChildren::Keyword(kw) = &first_branch.children[0] {
+                    assert_eq!(kw.name, "Register Keyword To Run On Failure");
+                    assert_eq!(kw.msg[0].timestamp, "20241217 11:27:26.201");
+                    assert_eq!(kw.msg[0].value, "Keyword will not be run on failure.");
+                    assert_eq!(kw.var[0], "${dummyVar}");
+                    assert_eq!(kw.args[0], "${None}");
+                    assert_eq!(kw.tags[0], "Config");
+                    assert_eq!(
+                        kw.doc.as_ref().unwrap(),
+                        "Sets the keyword to execute, when a Browser keyword fails."
+                    );
+                } else {
+                    panic!("Expected a kw, but got something else");
+                }
 
                 let if_status = &if_.status;
                 assert_eq!(if_status.status, "PASS");
