@@ -29,6 +29,8 @@ struct Suite {
     source_file: String,
     #[serde(rename = "status")]
     status: Status,
+    #[serde(rename = "doc")]
+    doc: Option<String>,
     #[serde(rename = "$value", default)]
     children: Vec<SuiteChildren>,
 }
@@ -105,6 +107,8 @@ enum KeywordChildren {
     For(For),
     #[serde(rename = "test")]
     Test(Test),
+    #[serde(rename = "continue")]
+    Continue(Continue),
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -119,6 +123,12 @@ struct Branch {
     return_: Option<Return>,
     #[serde(rename = "$value", default)]
     children: Vec<KeywordChildren>,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+struct Continue {
+    #[serde(rename = "status")]
+    status: Status,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
