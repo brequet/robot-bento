@@ -389,8 +389,6 @@ mod tests {
 
     #[test]
     fn test_parse_xml() {
-        // TODO: test and kw in same enum
-        // TODO: handle <continue> tag
         // let file_path = "robot-data-sample/8-tests-1-ko/output.xml";
         let file_path = "src/handlers/resources/output_simplified.xml";
         let xml_content = fs::read_to_string(file_path).expect("Unable to read file");
