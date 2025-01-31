@@ -1,11 +1,30 @@
 use actix_multipart::{form::MultipartFormConfig, MultipartError};
 use actix_web::{App, Error, HttpRequest, HttpServer};
+use dotenv;
+use services::parser::TestRun;
 mod config;
-mod handlers;
+mod models;
+mod repositories;
 mod routes;
+mod services;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv::dotenv().ok();
+
+    let pool = config::database::setup_database().await;
+
+    let file_path = "./src/services/resources/output_simplified.xml";
+    let result = services::parser::get_test_run_from_xml(&file_path);
+    match result {
+        Ok(test_run) => {
+            if let Err(e) = services::robot::RobotService::ingest(&pool, test_run).await {
+                println!("Ingest error: {:?}", e);
+            }
+        }
+        Err(e) => println!("Error: {:?}", e),
+    }
+
     let server_config = config::server::load();
     let addr = format!("127.0.0.1:{}", server_config.port);
 
