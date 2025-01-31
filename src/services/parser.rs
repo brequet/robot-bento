@@ -1,7 +1,4 @@
-use quick_xml::{
-    de::{from_str, Deserializer},
-    DeError,
-};
+use quick_xml::{de::from_str, DeError};
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -40,7 +37,7 @@ pub struct Suite {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-enum SuiteChildren {
+pub enum SuiteChildren {
     /*
     In suite:
     - setup kw
@@ -77,7 +74,7 @@ pub struct Test {
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-enum BaseBody {
+pub enum BaseBody {
     // 'Keyword', 'For', 'While', 'Group', 'If', 'Try', 'Var', 'Return', 'Continue', 'Break', 'Message', 'Error'
     #[serde(rename = "kw")]
     Keyword(Keyword),
@@ -326,7 +323,7 @@ pub struct StatisticsTags {
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct StatisticsSuites {
     #[serde(rename = "stat", default)]
-    pub stats: Vec<StatisticsSuiteTag>,
+    pub stats: Vec<StatisticsTag>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -337,22 +334,10 @@ pub struct StatisticsTag {
     pub fail: u32,
     #[serde(rename = "@skip")]
     pub skip: u32,
-    #[serde(rename = "$text")]
-    pub text: String,
-}
-
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct StatisticsSuiteTag {
-    #[serde(rename = "@pass")]
-    pub pass: u32,
-    #[serde(rename = "@fail")]
-    pub fail: u32,
-    #[serde(rename = "@skip")]
-    pub skip: u32,
     #[serde(rename = "@id")]
-    pub id: String,
+    pub id: Option<String>,
     #[serde(rename = "@name")]
-    pub name: String,
+    pub name: Option<String>,
     #[serde(rename = "$text")]
     pub text: String,
 }
@@ -372,8 +357,6 @@ pub fn get_test_run_from_xml(xml_file_path: &str) -> Result<TestRun, DeError> {
 mod tests {
     use core::panic;
 
-    use quick_xml::errors;
-
     use super::*;
 
     #[test]
@@ -389,6 +372,7 @@ mod tests {
 
         assert!(result.is_ok());
 
+        // TODO: correct tests
         // let test_run = result.unwrap();
 
         // // let json = serde_json::to_string_pretty(&test_run).unwrap();
