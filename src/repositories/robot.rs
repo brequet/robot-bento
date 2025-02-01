@@ -1,5 +1,14 @@
 use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, TestRunDB};
+use chrono::NaiveDateTime;
 use sqlx::{query_file, query_file_as, PgPool};
+
+struct TestRunDBPartial {
+    pub id: Option<i32>,
+    pub rpa: bool,
+    pub generator: String,
+    pub generated_date: NaiveDateTime,
+    pub schema_version: String,
+}
 
 pub struct RobotRepository;
 
@@ -8,9 +17,13 @@ impl RobotRepository {
         pool: &PgPool,
         id: i32,
     ) -> Result<Option<TestRunDB>, sqlx::Error> {
-        let test_run = match query_file!("./src/repositories/sql/robot/get_test_run_by_id.sql", id)
-            .fetch_optional(pool)
-            .await?
+        let test_run = match query_file_as!(
+            TestRunDBPartial,
+            "./src/repositories/sql/robot/get_test_run_by_id.sql",
+            id
+        )
+        .fetch_optional(pool)
+        .await?
         {
             Some(r) => r,
             None => return Ok(None),
@@ -33,7 +46,7 @@ impl RobotRepository {
         .await?;
 
         Ok(Some(TestRunDB {
-            id: Some(test_run.id),
+            id: test_run.id,
             rpa: test_run.rpa,
             generator: test_run.generator,
             generated_date: test_run.generated_date,
