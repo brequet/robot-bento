@@ -11,6 +11,7 @@ pub struct TestRunDB {
     pub schema_version: String,
     // TODO sha1: String,
     pub statistics: Vec<StatDB>,
+    pub errors: Vec<ErrorDB>,
 }
 
 #[derive(Debug, Serialize)]
@@ -31,4 +32,12 @@ pub enum StatTypeDB {
     Total,
     Tag,
     Suite,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ErrorDB {
+    pub id: Option<i32>,
+    pub timestamp: NaiveDateTime,
+    pub level: String,
+    pub content: String,
 }

@@ -1,5 +1,5 @@
-use actix_multipart::{form::MultipartFormConfig, MultipartError};
-use actix_web::{App, Error, HttpRequest, HttpServer};
+use actix_multipart::{form::MultipartFormConfig, test, MultipartError};
+use actix_web::{web, App, Error, HttpRequest, HttpServer};
 use dotenv;
 use services::parser::TestRun;
 mod config;
@@ -26,12 +26,27 @@ async fn main() -> std::io::Result<()> {
         Err(e) => println!("Error: {:?}", e),
     }
 
+    let test_run = services::robot::RobotService::get_test_run_by_id(&pool, 1).await;
+    match test_run {
+        Ok(test_run) => match test_run {
+            Some(test_run) => {
+                println!("Test run: {:?}", test_run);
+            }
+            None => {
+                println!("Test run not found");
+            }
+        },
+        Err(e) => {
+            println!("Error: {:?}", e);
+        }
+    }
+
     let server_config = config::server::load();
     let addr = format!("127.0.0.1:{}", server_config.port);
 
     println!("Running on {}", addr);
 
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
             .app_data(
                 MultipartFormConfig::default()
@@ -40,6 +55,7 @@ async fn main() -> std::io::Result<()> {
                     .error_handler(handle_multipart_error),
             )
             .configure(routes::ingest::init)
+            .configure(|cfg| routes::robot::init(cfg, web::Data::new(pool.clone())))
     })
     .bind(addr)?
     .run()

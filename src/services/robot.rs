@@ -1,6 +1,6 @@
 use sqlx::PgPool;
 
-use crate::repositories::robot::RobotRepository;
+use crate::{models::robot::TestRunDB, repositories::robot::RobotRepository};
 
 use super::{mappers, parser::TestRun};
 
@@ -24,20 +24,11 @@ impl RobotService {
         Ok(())
     }
 
-    // pub async fn get_test_run_by_id(
-    //     pool: &PgPool,
-    //     id: i32,
-    // ) -> Result<Option<mappers::robot::TestRun>, Box<dyn std::error::Error>> {
-    //     let test_run = RobotRepository::get_test_run_by_id(pool, id).await?;
-    //     match test_run {
-    //         Some(test_run) => {
-    //             let mapped_test_run = mappers::robot::map_test_run(&test_run);
-    //             match mapped_test_run {
-    //                 Ok(mapped_test_run) => return Ok(Some(mapped_test_run)),
-    //                 Err(e) => return Err(Box::new(e)),
-    //             }
-    //         }
-    //         None => return Ok(None),
-    //     }
-    // }
+    pub async fn get_test_run_by_id(
+        pool: &PgPool,
+        id: i32,
+    ) -> Result<Option<TestRunDB>, Box<dyn std::error::Error>> {
+        let test_run = RobotRepository::get_test_run_by_id(pool, id).await?;
+        Ok(test_run)
+    }
 }

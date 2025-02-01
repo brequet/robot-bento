@@ -7,7 +7,7 @@ CREATE TABLE test_runs (
     imported_date TIMESTAMP DEFAULT NOW()
 );
 CREATE TYPE stat_type AS ENUM ('total', 'tag', 'suite');
-CREATE TABLE statistics (
+CREATE TABLE test_run_statistics (
     id SERIAL PRIMARY KEY,
     test_run_id INTEGER NOT NULL,
     -- foreign key to test_runs.id
@@ -18,4 +18,12 @@ CREATE TABLE statistics (
     text TEXT NOT NULL,
     identifier TEXT,
     name TEXT
+);
+CREATE TABLE test_run_errors (
+    id SERIAL PRIMARY KEY,
+    test_run_id INTEGER NOT NULL,
+    -- foreign key to test_runs.id
+    timestamp TIMESTAMP NOT NULL,
+    level TEXT NOT NULL,
+    content TEXT NOT NULL
 );

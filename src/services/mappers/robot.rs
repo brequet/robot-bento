@@ -1,6 +1,6 @@
-use chrono::NaiveDateTime;
+use chrono::{NaiveDateTime, ParseResult};
 
-use crate::models::robot::{StatDB, StatTypeDB, TestRunDB};
+use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, TestRunDB};
 use crate::services::parser;
 
 pub fn map_test_run(test_run: &parser::TestRun) -> Result<TestRunDB, chrono::ParseError> {
@@ -8,12 +8,10 @@ pub fn map_test_run(test_run: &parser::TestRun) -> Result<TestRunDB, chrono::Par
         id: None,
         rpa: test_run.rpa,
         generator: test_run.generator.clone(),
-        generated_date: NaiveDateTime::parse_from_str(
-            &test_run.generated_date.clone(),
-            "%Y%m%d %H:%M:%S%.3f",
-        )?,
+        generated_date: map_timestamp(&test_run.generated_date.clone())?,
         schema_version: test_run.schema_version.clone(),
         statistics: map_statistics(&test_run.statistics),
+        errors: map_errors(&test_run.errors),
     })
 }
 
@@ -48,4 +46,25 @@ fn map_statistic(statistic: &parser::StatisticsTag, stat_type: StatTypeDB) -> St
         identifier: statistic.id.clone(),
         name: statistic.name.clone(),
     }
+}
+
+fn map_errors(errors: &parser::Errors) -> Vec<ErrorDB> {
+    errors
+        .messages
+        .iter()
+        .map(|message| map_error(message))
+        .collect()
+}
+
+fn map_error(error: &parser::Message) -> ErrorDB {
+    ErrorDB {
+        id: None,
+        timestamp: map_timestamp(&error.timestamp).unwrap(),
+        level: error.level.clone(),
+        content: error.value.clone(),
+    }
+}
+
+fn map_timestamp(timestamp: &str) -> ParseResult<NaiveDateTime> {
+    NaiveDateTime::parse_from_str(&timestamp, "%Y%m%d %H:%M:%S%.3f")
 }

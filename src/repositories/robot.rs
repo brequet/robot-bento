@@ -1,5 +1,5 @@
-use crate::models::robot::{StatDB, StatTypeDB, TestRunDB};
-use sqlx::{query_file, PgPool};
+use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, TestRunDB};
+use sqlx::{query_file, query_file_as, PgPool};
 
 pub struct RobotRepository;
 
@@ -8,39 +8,39 @@ impl RobotRepository {
         pool: &PgPool,
         id: i32,
     ) -> Result<Option<TestRunDB>, sqlx::Error> {
-        let rows = query_file!("./src/repositories/sql/robot/get_test_run_by_id.sql", id)
-            .fetch_all(pool)
-            .await?;
-
-        if rows.is_empty() {
-            return Ok(None);
-        }
-
-        let first_row = &rows[0];
-        let test_run = TestRunDB {
-            id: Some(first_row.id),
-            rpa: first_row.rpa,
-            generator: first_row.generator.clone(),
-            generated_date: first_row.generated_date,
-            schema_version: first_row.schema_version.clone(),
-            statistics: rows
-                .iter()
-                .filter_map(|row| {
-                    Some(StatDB {
-                        id: Some(row.stat_id),
-                        stat_type: row.stat_type.clone(),
-                        pass_count: row.pass_count,
-                        fail_count: row.fail_count,
-                        skip_count: row.skip_count,
-                        identifier: row.identifier.clone(),
-                        name: row.name.clone(),
-                        text: row.text.clone(),
-                    })
-                })
-                .collect(),
+        let test_run = match query_file!("./src/repositories/sql/robot/get_test_run_by_id.sql", id)
+            .fetch_optional(pool)
+            .await?
+        {
+            Some(r) => r,
+            None => return Ok(None),
         };
 
-        Ok(Some(test_run))
+        let statistics = query_file_as!(
+            StatDB,
+            "./src/repositories/sql/robot/get_test_run_statistics_by_test_run_id.sql",
+            id
+        )
+        .fetch_all(pool)
+        .await?;
+
+        let errors = query_file_as!(
+            ErrorDB,
+            "./src/repositories/sql/robot/get_test_run_errors_by_test_run_id.sql",
+            id
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(Some(TestRunDB {
+            id: Some(test_run.id),
+            rpa: test_run.rpa,
+            generator: test_run.generator,
+            generated_date: test_run.generated_date,
+            schema_version: test_run.schema_version,
+            statistics,
+            errors,
+        }))
     }
 
     pub async fn insert_test_run(pool: &PgPool, test_run: &TestRunDB) -> Result<i32, sqlx::Error> {
@@ -57,6 +57,7 @@ impl RobotRepository {
         let test_run_id = result.id;
 
         RobotRepository::insert_statistics(pool, test_run_id, &test_run.statistics).await?;
+        RobotRepository::insert_errors(pool, test_run_id, &test_run.errors).await?;
 
         Ok(test_run_id)
     }
@@ -67,7 +68,7 @@ impl RobotRepository {
         statistics: &Vec<StatDB>,
     ) -> Result<(), sqlx::Error> {
         let mut query_builder = sqlx::QueryBuilder::new(
-            "INSERT INTO statistics (test_run_id, stat_type, pass_count, fail_count, skip_count, identifier, name, text) "
+            "INSERT INTO test_run_statistics (test_run_id, stat_type, pass_count, fail_count, skip_count, identifier, name, text) "
         );
 
         query_builder.push_values(statistics, |mut b, stat| {
@@ -79,6 +80,26 @@ impl RobotRepository {
                 .push_bind(&stat.identifier)
                 .push_bind(&stat.name)
                 .push_bind(&stat.text);
+        });
+
+        query_builder.build().execute(pool).await?;
+        Ok(())
+    }
+
+    async fn insert_errors(
+        pool: &PgPool,
+        test_run_id: i32,
+        errors: &Vec<ErrorDB>,
+    ) -> Result<(), sqlx::Error> {
+        let mut query_builder = sqlx::QueryBuilder::new(
+            "INSERT INTO test_run_errors (test_run_id, timestamp, level, content) ",
+        );
+
+        query_builder.push_values(errors, |mut b, error| {
+            b.push_bind(test_run_id)
+                .push_bind(&error.timestamp)
+                .push_bind(&error.level)
+                .push_bind(&error.content);
         });
 
         query_builder.build().execute(pool).await?;
