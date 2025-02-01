@@ -1,6 +1,6 @@
-use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestRunDB};
+use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB};
 use chrono::NaiveDateTime;
-use sqlx::{query_file, query_file_as, PgPool};
+use sqlx::{query_file, query_file_as, query_scalar, PgPool};
 
 struct TestRunDBPartial {
     pub id: Option<i32>,
@@ -18,6 +18,18 @@ struct SuiteDBPartial {
     pub end_time: NaiveDateTime,
     pub doc: Option<String>,
     pub identifier: String,
+}
+
+pub struct TestDBPartial {
+    pub id: Option<i32>,
+    pub name: String,
+    pub line: i32,
+    pub identifier: String,
+    pub status: String,
+    pub start_time: NaiveDateTime,
+    pub end_time: NaiveDateTime,
+    pub doc: Option<String>,
+    pub timeout: Option<String>,
 }
 
 pub struct RobotRepository;
@@ -40,6 +52,8 @@ impl RobotRepository {
             None => return Ok(None),
         };
 
+        // TODO: fix getting of suites: all are fetch are level 0, need to fetch recursively (suites can have suites)
+        // Get suite by test_run_id WITHOUT parent suite, then get children suites
         let suites = RobotRepository::get_suites_by_test_run_id(pool, id).await?;
         let statistics = RobotRepository::get_test_run_statistics_by_test_run_id(pool, id).await?;
         let errors = RobotRepository::get_test_run_errors_by_test_run_id(pool, id).await?;
@@ -89,9 +103,11 @@ impl RobotRepository {
         .fetch_all(pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_suites_by_test_run_id failed: {:?}", e))?;
-        Ok(suites
-            .iter()
-            .map(|suite| SuiteDB {
+
+        let mut suite_dbs = Vec::new();
+        for suite in suites {
+            let tests = RobotRepository::get_tests_by_suite_id(pool, suite.id.unwrap()).await?;
+            suite_dbs.push(SuiteDB {
                 id: suite.id,
                 name: suite.name.clone(),
                 source: suite.source.clone(),
@@ -101,8 +117,58 @@ impl RobotRepository {
                 doc: suite.doc.clone(),
                 identifier: suite.identifier.clone(),
                 suites: Vec::new(),
+                tests,
+            });
+        }
+        Ok(suite_dbs)
+    }
+
+    async fn get_tests_by_suite_id(
+        pool: &sqlx::Pool<sqlx::Postgres>,
+        suite_id: i32,
+    ) -> Result<Vec<TestDB>, sqlx::Error> {
+        let tests = query_file_as!(
+            TestDBPartial,
+            "./src/repositories/sql/robot/get_tests_by_suite_id.sql",
+            suite_id
+        )
+        .fetch_all(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_tests_by_suite_id failed: {:?}", e))?;
+
+        let mut tests_dbs = Vec::new();
+        for test in tests {
+            let tags = RobotRepository::get_tags_by_test_id(pool, test.id.unwrap()).await?;
+            tests_dbs.push(TestDB {
+                id: test.id,
+                name: test.name.clone(),
+                line: test.line,
+                identifier: test.identifier.clone(),
+                status: test.status.clone(),
+                start_time: test.start_time,
+                end_time: test.end_time,
+                doc: test.doc.clone(),
+                timeout: test.timeout.clone(),
+                tags,
             })
-            .collect())
+        }
+
+     Ok(tests_dbs)
+    }
+
+    async fn get_tags_by_test_id(
+        pool: &sqlx::Pool<sqlx::Postgres>,
+        test_id: i32,
+    ) -> Result<Vec<String>, sqlx::Error> {
+        let tags = query_scalar!(
+            "SELECT value FROM test_tags WHERE test_id = $1",
+            test_id
+        )
+        .fetch_all(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_tags_by_test_id failed: {:?}", e))?;
+
+        Ok(tags)
     }
 
     async fn get_test_run_statistics_by_test_run_id(
@@ -178,10 +244,78 @@ impl RobotRepository {
                 if !suite.suites.is_empty() {
                     RobotRepository::insert_suites(pool, test_run_id, Some(id), &suite.suites).await?;
                 }
+                if !suite.tests.is_empty() {
+                    RobotRepository::insert_tests(pool, id, &suite.tests).await?;
+                }
             }
 
             Ok(())
         }).await
+    }
+
+    async fn insert_tests(
+        pool: &PgPool,
+        suite_id: i32,
+        tests: &Vec<TestDB>,
+    ) -> Result<(), sqlx::Error> {
+        if tests.is_empty() {
+            return Ok(());
+        }
+
+        let mut query_builder = sqlx::QueryBuilder::new(
+            "INSERT INTO tests (suite_id, identifier, name, status, start_time, end_time, line, doc, timeout) ",
+        );
+
+        query_builder.push_values(tests, |mut b, test| {
+            b.push_bind(suite_id)
+                .push_bind(&test.identifier)
+                .push_bind(&test.name)
+                .push_bind(&test.status)
+                .push_bind(&test.start_time)
+                .push_bind(&test.end_time)
+                .push_bind(&test.line)
+                .push_bind(&test.doc)
+                .push_bind(&test.timeout);
+        });
+
+        query_builder.push(" RETURNING id");
+
+        let ids: Vec<(i32,)> = query_builder.build_query_as().fetch_all(pool).await
+        .inspect_err(|e| tracing::error!("Query insert_tests failed: {:?}", e))?;
+
+        for (test, (id,)) in tests.iter().zip(ids) {
+            if !test.tags.is_empty() {
+                RobotRepository::insert_test_tags(pool, id, &test.tags).await?
+            }
+        }
+
+        Ok(())  
+    }
+    
+    async fn insert_test_tags(
+        pool: &PgPool,
+        test_id: i32,
+        tags: &Vec<String>,
+    ) -> Result<(), sqlx::Error> {
+        if tags.is_empty() {
+            return Ok(());
+        }
+
+        let mut query_builder = sqlx::QueryBuilder::new(
+            "INSERT INTO test_tags (test_id, value) ",
+        );
+
+        query_builder.push_values(tags, |mut b, tag| {
+            b.push_bind(test_id)
+                .push_bind(tag);
+        });
+
+        query_builder
+            .build()
+            .execute(pool)
+            .await
+            .inspect_err(|e| tracing::error!("Query insert_test_tags failed: {:?}", e))?;
+        Ok(())
     }
 
     async fn insert_statistics(

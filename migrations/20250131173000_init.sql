@@ -9,15 +9,33 @@ CREATE TABLE test_runs (
 CREATE TABLE suites (
     id SERIAL PRIMARY KEY,
     test_run_id INTEGER NOT NULL,
+    identifier TEXT NOT NULL,
     name TEXT NOT NULL,
     source TEXT NOT NULL,
     status TEXT NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
-    identifier TEXT NOT NULL,
     parent_suite_id INTEGER,
     doc TEXT
 );
+CREATE TABLE tests (
+    id SERIAL PRIMARY KEY,
+    suite_id INTEGER NOT NULL,
+    identifier TEXT NOT NULL,
+    name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    line INTEGER NOT NULL,
+    doc TEXT,
+    timeout TEXT
+);
+CREATE TABLE test_tags (
+    test_id INTEGER NOT NULL,
+    value TEXT NOT NULL,
+    PRIMARY KEY (test_id, value)
+);
+CREATE INDEX idx_tags_test_id ON test_tags (test_id);
 CREATE TYPE stat_type AS ENUM ('total', 'tag', 'suite');
 CREATE TABLE test_run_statistics (
     id SERIAL PRIMARY KEY,

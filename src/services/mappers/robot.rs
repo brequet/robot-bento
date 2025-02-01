@@ -1,6 +1,6 @@
 use chrono::{NaiveDateTime, ParseResult};
 
-use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestRunDB};
+use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB};
 use crate::services::parser;
 
 pub fn map_test_run(test_run: &parser::TestRun) -> Result<TestRunDB, chrono::ParseError> {
@@ -38,6 +38,29 @@ fn map_suite(suite: &parser::Suite) -> SuiteDB {
                 _ => None,
             })
             .collect(),
+        tests: suite
+            .children
+            .iter()
+            .filter_map(|child| match child {
+                parser::SuiteChildren::Test(test) => Some(map_test(test)),
+                _ => None,
+            })
+            .collect(),
+    }
+}
+
+fn map_test(test: &parser::Test) -> TestDB {
+    TestDB {
+        id: None,
+        name: test.name.clone(),
+        line: test.line.parse::<i32>().unwrap(),
+        identifier: test.id.clone(),
+        tags: test.tags.clone(),
+        status: test.status.status.clone(),
+        start_time: map_timestamp(&test.status.start_time).unwrap(),
+        end_time: map_timestamp(&test.status.end_time).unwrap(),
+        doc: test.doc.clone(),
+        timeout: test.timeout.clone(),
     }
 }
 

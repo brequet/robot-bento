@@ -2,6 +2,8 @@ use chrono::NaiveDateTime;
 use serde::Serialize;
 use sqlx::FromRow;
 
+use crate::services::parser::Test;
+
 #[derive(Debug, Serialize, FromRow)]
 pub struct TestRunDB {
     pub id: Option<i32>,
@@ -29,9 +31,32 @@ pub struct SuiteDB {
     // - suites
     // - tests
     // - teardown kw
+    // pub setup_keyword: Option<KeywordDB>,
     pub suites: Vec<SuiteDB>,
+    pub tests: Vec<TestDB>,
+    // pub teardown_keyword: Option<KeywordDB>,
     // TODO: children
 }
+
+#[derive(Debug, Serialize)]
+pub struct TestDB {
+    pub id: Option<i32>,
+    pub name: String,
+    pub line: i32,
+    // TODO: keywords
+    pub identifier: String,
+    pub tags: Vec<String>,
+    pub status: String,
+    pub start_time: NaiveDateTime,
+    pub end_time: NaiveDateTime,
+    pub doc: Option<String>,
+    pub timeout: Option<String>,
+}
+
+// #[derive(Debug, Serialize)]
+// pub struct KeywordDB {
+
+// }
 
 #[derive(Debug, Serialize)]
 pub struct StatDB {

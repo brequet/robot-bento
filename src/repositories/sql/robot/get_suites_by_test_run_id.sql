@@ -7,4 +7,5 @@ SELECT s.id,
     s.identifier,
     s.doc
 FROM suites s
-WHERE s.test_run_id = $1;
+WHERE s.test_run_id = $1
+ORDER BY s.start_time ASC;
