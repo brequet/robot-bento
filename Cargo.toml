@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 actix-multipart = "0.7.2"
 actix-web = "4.9.0"
-chrono = "0.4.39"
+chrono = { version = "0.4.39", features = ["serde"] }
 dotenv = "0.15.0"
 quick-xml = { version = "0.37.2", features = ["serialize"] }
 serde = { version = "1.0.217", features = ["derive"] }
