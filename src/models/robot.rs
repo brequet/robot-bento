@@ -25,6 +25,11 @@ pub struct SuiteDB {
     pub end_time: NaiveDateTime,
     pub doc: Option<String>,
     pub identifier: String,
+    // - setup kw
+    // - suites
+    // - tests
+    // - teardown kw
+    pub suites: Vec<SuiteDB>,
     // TODO: children
 }
 

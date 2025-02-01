@@ -9,6 +9,16 @@ struct TestRunDBPartial {
     pub generated_date: NaiveDateTime,
     pub schema_version: String,
 }
+struct SuiteDBPartial {
+    pub id: Option<i32>,
+    pub name: String,
+    pub source: Option<String>,
+    pub status: String,
+    pub start_time: NaiveDateTime,
+    pub end_time: NaiveDateTime,
+    pub doc: Option<String>,
+    pub identifier: String,
+}
 
 pub struct RobotRepository;
 
@@ -23,7 +33,8 @@ impl RobotRepository {
             id
         )
         .fetch_optional(pool)
-        .await?
+        .await
+        .inspect_err(|e| tracing::error!("Query get_test_run_by_id failed: {:?}", e))?
         {
             Some(r) => r,
             None => return Ok(None),
@@ -54,7 +65,8 @@ impl RobotRepository {
             test_run.schema_version
         )
         .fetch_one(pool)
-        .await?;
+        .await
+        .inspect_err(|e| tracing::error!("Query insert_test_run failed: {:?}", e))?;
 
         let test_run_id = result.id;
 
@@ -70,13 +82,27 @@ impl RobotRepository {
         test_run_id: i32,
     ) -> Result<Vec<SuiteDB>, sqlx::Error> {
         let suites = query_file_as!(
-            SuiteDB,
+            SuiteDBPartial,
             "./src/repositories/sql/robot/get_suites_by_test_run_id.sql",
             test_run_id
         )
         .fetch_all(pool)
-        .await?;
-        Ok(suites)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_suites_by_test_run_id failed: {:?}", e))?;
+        Ok(suites
+            .iter()
+            .map(|suite| SuiteDB {
+                id: suite.id,
+                name: suite.name.clone(),
+                source: suite.source.clone(),
+                status: suite.status.clone(),
+                start_time: suite.start_time,
+                end_time: suite.end_time,
+                doc: suite.doc.clone(),
+                identifier: suite.identifier.clone(),
+                suites: Vec::new(),
+            })
+            .collect())
     }
 
     async fn get_test_run_statistics_by_test_run_id(
@@ -89,7 +115,13 @@ impl RobotRepository {
             test_run_id
         )
         .fetch_all(pool)
-        .await?;
+        .await
+        .inspect_err(|e| {
+            tracing::error!(
+                "Query get_test_run_statistics_by_test_run_id failed: {:?}",
+                e
+            )
+        })?;
         Ok(statistics)
     }
 
@@ -103,7 +135,10 @@ impl RobotRepository {
             test_run_id
         )
         .fetch_all(pool)
-        .await?;
+        .await
+        .inspect_err(|e| {
+            tracing::error!("Query get_test_run_errors_by_test_run_id failed: {:?}", e)
+        })?;
         Ok(errors)
     }
 
@@ -113,24 +148,40 @@ impl RobotRepository {
         parent_suite_id: Option<i32>,
         suites: &Vec<SuiteDB>,
     ) -> Result<(), sqlx::Error> {
-        let mut query_builder = sqlx::QueryBuilder::new(
-            "INSERT INTO suites (test_run_id, name, source, status, start_time, end_time, identifier, parent_suite_id, doc) ",
-        );
+        Box::pin(async move {
+            if suites.is_empty() {
+                return Ok(());
+            }
+            
+            let mut query_builder = sqlx::QueryBuilder::new(
+                "INSERT INTO suites (test_run_id, name, source, status, start_time, end_time, identifier, parent_suite_id, doc) ",
+            );
 
-        query_builder.push_values(suites, |mut b, suite| {
-            b.push_bind(test_run_id)
-                .push_bind(&suite.name)
-                .push_bind(&suite.source)
-                .push_bind(&suite.status)
-                .push_bind(&suite.start_time)
-                .push_bind(&suite.end_time)
-                .push_bind(&suite.identifier)
-                .push_bind(parent_suite_id)
-                .push_bind(&suite.doc);
-        });
+            query_builder.push_values(suites, |mut b, suite| {
+                b.push_bind(test_run_id)
+                    .push_bind(&suite.name)
+                    .push_bind(&suite.source)
+                    .push_bind(&suite.status)
+                    .push_bind(&suite.start_time)
+                    .push_bind(&suite.end_time)
+                    .push_bind(&suite.identifier)
+                    .push_bind(parent_suite_id)
+                    .push_bind(&suite.doc);
+            });
 
-        query_builder.build().execute(pool).await?;
-        Ok(())
+            query_builder.push(" RETURNING id");
+
+            let ids: Vec<(i32,)> = query_builder.build_query_as().fetch_all(pool).await
+            .inspect_err(|e| tracing::error!("Query insert_suites failed: {:?}", e))?;
+
+            for (suite, (id,)) in suites.iter().zip(ids) {
+                if !suite.suites.is_empty() {
+                    RobotRepository::insert_suites(pool, test_run_id, Some(id), &suite.suites).await?;
+                }
+            }
+
+            Ok(())
+        }).await
     }
 
     async fn insert_statistics(
@@ -138,6 +189,10 @@ impl RobotRepository {
         test_run_id: i32,
         statistics: &Vec<StatDB>,
     ) -> Result<(), sqlx::Error> {
+        if statistics.is_empty() {
+            return Ok(());
+        }
+
         let mut query_builder = sqlx::QueryBuilder::new(
             "INSERT INTO test_run_statistics (test_run_id, stat_type, pass_count, fail_count, skip_count, identifier, name, text) "
         );
@@ -153,7 +208,11 @@ impl RobotRepository {
                 .push_bind(&stat.text);
         });
 
-        query_builder.build().execute(pool).await?;
+        query_builder
+            .build()
+            .execute(pool)
+            .await
+            .inspect_err(|e| tracing::error!("Query insert_statistics failed: {:?}", e))?;
         Ok(())
     }
 
@@ -162,6 +221,10 @@ impl RobotRepository {
         test_run_id: i32,
         errors: &Vec<ErrorDB>,
     ) -> Result<(), sqlx::Error> {
+        if errors.is_empty() {
+            return Ok(());
+        }
+
         let mut query_builder = sqlx::QueryBuilder::new(
             "INSERT INTO test_run_errors (test_run_id, timestamp, level, content) ",
         );
@@ -173,7 +236,11 @@ impl RobotRepository {
                 .push_bind(&error.content);
         });
 
-        query_builder.build().execute(pool).await?;
+        query_builder
+            .build()
+            .execute(pool)
+            .await
+            .inspect_err(|e| tracing::error!("Query insert_errors failed: {:?}", e))?;
         Ok(())
     }
 }

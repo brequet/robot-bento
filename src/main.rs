@@ -10,12 +10,14 @@ mod services;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    tracing_subscriber::fmt::init();
+
     dotenv::dotenv().ok();
 
     let pool = config::database::setup_database().await;
 
-    let file_path = "./src/services/resources/output_simplified.xml";
-    // let file_path = "./robot-data-sample/8-tests-1-ko/output.xml";
+    // let file_path = "./src/services/resources/output_simplified.xml";
+    let file_path = "./robot-data-sample/8-tests-1-ko/output.xml";
     let result = services::parser::get_test_run_from_xml(&file_path);
     match result {
         Ok(test_run) => {
@@ -26,25 +28,8 @@ async fn main() -> std::io::Result<()> {
         Err(e) => println!("Error: {:?}", e),
     }
 
-    let test_run = services::robot::RobotService::get_test_run_by_id(&pool, 1).await;
-    match test_run {
-        Ok(test_run) => match test_run {
-            Some(test_run) => {
-                println!("Test run: {:?}", test_run);
-            }
-            None => {
-                println!("Test run not found");
-            }
-        },
-        Err(e) => {
-            println!("Error: {:?}", e);
-        }
-    }
-
     let server_config = config::server::load();
     let addr = format!("127.0.0.1:{}", server_config.port);
-
-    println!("Running on {}", addr);
 
     HttpServer::new(move || {
         App::new()

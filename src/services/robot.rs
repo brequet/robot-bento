@@ -15,7 +15,7 @@ impl RobotService {
         match test_run {
             Ok(test_run) => match RobotRepository::insert_test_run(pool, &test_run).await {
                 Ok(test_run_id) => {
-                    println!("Ingested test run with id: {}", test_run_id);
+                    println!("Ingested test run with id: {}", test_run_id); // TODO: better logging
                 }
                 Err(e) => return Err(Box::new(e)),
             },

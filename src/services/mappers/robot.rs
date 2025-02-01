@@ -30,6 +30,14 @@ fn map_suite(suite: &parser::Suite) -> SuiteDB {
         end_time: map_timestamp(&suite.status.end_time).unwrap(),
         identifier: suite.id.clone(),
         doc: suite.doc.clone(),
+        suites: suite
+            .children
+            .iter()
+            .filter_map(|child| match child {
+                parser::SuiteChildren::Suite(suite) => Some(map_suite(suite)),
+                _ => None,
+            })
+            .collect(),
     }
 }
 
