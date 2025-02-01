@@ -1,4 +1,4 @@
-use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, TestRunDB};
+use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestRunDB};
 use chrono::NaiveDateTime;
 use sqlx::{query_file, query_file_as, PgPool};
 
@@ -29,21 +29,9 @@ impl RobotRepository {
             None => return Ok(None),
         };
 
-        let statistics = query_file_as!(
-            StatDB,
-            "./src/repositories/sql/robot/get_test_run_statistics_by_test_run_id.sql",
-            id
-        )
-        .fetch_all(pool)
-        .await?;
-
-        let errors = query_file_as!(
-            ErrorDB,
-            "./src/repositories/sql/robot/get_test_run_errors_by_test_run_id.sql",
-            id
-        )
-        .fetch_all(pool)
-        .await?;
+        let suites = RobotRepository::get_suites_by_test_run_id(pool, id).await?;
+        let statistics = RobotRepository::get_test_run_statistics_by_test_run_id(pool, id).await?;
+        let errors = RobotRepository::get_test_run_errors_by_test_run_id(pool, id).await?;
 
         Ok(Some(TestRunDB {
             id: test_run.id,
@@ -51,6 +39,7 @@ impl RobotRepository {
             generator: test_run.generator,
             generated_date: test_run.generated_date,
             schema_version: test_run.schema_version,
+            suites,
             statistics,
             errors,
         }))
@@ -69,10 +58,79 @@ impl RobotRepository {
 
         let test_run_id = result.id;
 
+        RobotRepository::insert_suites(pool, test_run_id, None, &test_run.suites).await?;
         RobotRepository::insert_statistics(pool, test_run_id, &test_run.statistics).await?;
         RobotRepository::insert_errors(pool, test_run_id, &test_run.errors).await?;
 
         Ok(test_run_id)
+    }
+
+    async fn get_suites_by_test_run_id(
+        pool: &sqlx::Pool<sqlx::Postgres>,
+        test_run_id: i32,
+    ) -> Result<Vec<SuiteDB>, sqlx::Error> {
+        let suites = query_file_as!(
+            SuiteDB,
+            "./src/repositories/sql/robot/get_suites_by_test_run_id.sql",
+            test_run_id
+        )
+        .fetch_all(pool)
+        .await?;
+        Ok(suites)
+    }
+
+    async fn get_test_run_statistics_by_test_run_id(
+        pool: &sqlx::Pool<sqlx::Postgres>,
+        test_run_id: i32,
+    ) -> Result<Vec<StatDB>, sqlx::Error> {
+        let statistics = query_file_as!(
+            StatDB,
+            "./src/repositories/sql/robot/get_test_run_statistics_by_test_run_id.sql",
+            test_run_id
+        )
+        .fetch_all(pool)
+        .await?;
+        Ok(statistics)
+    }
+
+    async fn get_test_run_errors_by_test_run_id(
+        pool: &sqlx::Pool<sqlx::Postgres>,
+        test_run_id: i32,
+    ) -> Result<Vec<ErrorDB>, sqlx::Error> {
+        let errors = query_file_as!(
+            ErrorDB,
+            "./src/repositories/sql/robot/get_test_run_errors_by_test_run_id.sql",
+            test_run_id
+        )
+        .fetch_all(pool)
+        .await?;
+        Ok(errors)
+    }
+
+    async fn insert_suites(
+        pool: &PgPool,
+        test_run_id: i32,
+        parent_suite_id: Option<i32>,
+        suites: &Vec<SuiteDB>,
+    ) -> Result<(), sqlx::Error> {
+        let mut query_builder = sqlx::QueryBuilder::new(
+            "INSERT INTO suites (test_run_id, name, source, status, start_time, end_time, identifier, parent_suite_id, doc) ",
+        );
+
+        query_builder.push_values(suites, |mut b, suite| {
+            b.push_bind(test_run_id)
+                .push_bind(&suite.name)
+                .push_bind(&suite.source)
+                .push_bind(&suite.status)
+                .push_bind(&suite.start_time)
+                .push_bind(&suite.end_time)
+                .push_bind(&suite.identifier)
+                .push_bind(parent_suite_id)
+                .push_bind(&suite.doc);
+        });
+
+        query_builder.build().execute(pool).await?;
+        Ok(())
     }
 
     async fn insert_statistics(

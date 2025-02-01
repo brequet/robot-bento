@@ -6,6 +6,18 @@ CREATE TABLE test_runs (
     generated_date TIMESTAMP NOT NULL,
     imported_date TIMESTAMP DEFAULT NOW()
 );
+CREATE TABLE suites (
+    id SERIAL PRIMARY KEY,
+    test_run_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    source TEXT NOT NULL,
+    status TEXT NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    identifier TEXT NOT NULL,
+    parent_suite_id INTEGER,
+    doc TEXT
+);
 CREATE TYPE stat_type AS ENUM ('total', 'tag', 'suite');
 CREATE TABLE test_run_statistics (
     id SERIAL PRIMARY KEY,

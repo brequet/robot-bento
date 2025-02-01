@@ -1,6 +1,6 @@
 use chrono::{NaiveDateTime, ParseResult};
 
-use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, TestRunDB};
+use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestRunDB};
 use crate::services::parser;
 
 pub fn map_test_run(test_run: &parser::TestRun) -> Result<TestRunDB, chrono::ParseError> {
@@ -10,9 +10,27 @@ pub fn map_test_run(test_run: &parser::TestRun) -> Result<TestRunDB, chrono::Par
         generator: test_run.generator.clone(),
         generated_date: map_timestamp(&test_run.generated_date.clone())?,
         schema_version: test_run.schema_version.clone(),
+        suites: map_suites(&test_run.suites),
         statistics: map_statistics(&test_run.statistics),
         errors: map_errors(&test_run.errors),
     })
+}
+
+fn map_suites(suites: &Vec<parser::Suite>) -> Vec<SuiteDB> {
+    suites.iter().map(|suite| map_suite(suite)).collect()
+}
+
+fn map_suite(suite: &parser::Suite) -> SuiteDB {
+    SuiteDB {
+        id: None,
+        name: suite.name.clone(),
+        source: suite.source_file.clone(),
+        status: suite.status.status.clone(),
+        start_time: map_timestamp(&suite.status.start_time).unwrap(),
+        end_time: map_timestamp(&suite.status.end_time).unwrap(),
+        identifier: suite.id.clone(),
+        doc: suite.doc.clone(),
+    }
 }
 
 fn map_statistics(statistics: &parser::Statistics) -> Vec<StatDB> {

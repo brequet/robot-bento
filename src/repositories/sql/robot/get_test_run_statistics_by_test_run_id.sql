@@ -7,4 +7,4 @@ SELECT stats.id,
     stats.name,
     stats.text
 FROM test_run_statistics stats
-WHERE stats.test_run_id = $1
+WHERE stats.test_run_id = $1;

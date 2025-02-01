@@ -8,7 +8,7 @@ pub fn init(cfg: &mut web::ServiceConfig, pool: web::Data<PgPool>) {
         .service(web::scope("/api/robot").service(get_test_run));
 }
 
-#[get("/test/{id}")]
+#[get("/test-run/{id}")]
 async fn get_test_run(
     pool: web::Data<PgPool>,
     path: web::Path<i32>,

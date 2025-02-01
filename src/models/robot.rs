@@ -10,8 +10,22 @@ pub struct TestRunDB {
     pub generated_date: NaiveDateTime,
     pub schema_version: String,
     // TODO sha1: String,
+    pub suites: Vec<SuiteDB>,
     pub statistics: Vec<StatDB>,
     pub errors: Vec<ErrorDB>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SuiteDB {
+    pub id: Option<i32>,
+    pub name: String,
+    pub source: Option<String>,
+    pub status: String,
+    pub start_time: NaiveDateTime,
+    pub end_time: NaiveDateTime,
+    pub doc: Option<String>,
+    pub identifier: String,
+    // TODO: children
 }
 
 #[derive(Debug, Serialize)]
