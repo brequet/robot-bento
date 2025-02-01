@@ -2,6 +2,7 @@ use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRun
 use chrono::NaiveDateTime;
 use sqlx::{query_file, query_file_as, query_scalar, PgPool};
 
+#[derive(sqlx::FromRow)]
 struct TestRunDBPartial {
     pub id: Option<i32>,
     pub rpa: bool,
@@ -9,6 +10,8 @@ struct TestRunDBPartial {
     pub generated_date: NaiveDateTime,
     pub schema_version: String,
 }
+
+#[derive(sqlx::FromRow)]
 struct SuiteDBPartial {
     pub id: Option<i32>,
     pub name: String,
@@ -20,6 +23,7 @@ struct SuiteDBPartial {
     pub identifier: String,
 }
 
+#[derive(sqlx::FromRow)]
 pub struct TestDBPartial {
     pub id: Option<i32>,
     pub name: String,
@@ -52,9 +56,7 @@ impl RobotRepository {
             None => return Ok(None),
         };
 
-        // TODO: fix getting of suites: all are fetch are level 0, need to fetch recursively (suites can have suites)
-        // Get suite by test_run_id WITHOUT parent suite, then get children suites
-        let suites = RobotRepository::get_suites_by_test_run_id(pool, id).await?;
+        let suites = RobotRepository::get_suites_by_test_run_id_and_parent_suite_id(pool, id, None).await?;
         let statistics = RobotRepository::get_test_run_statistics_by_test_run_id(pool, id).await?;
         let errors = RobotRepository::get_test_run_errors_by_test_run_id(pool, id).await?;
 
@@ -91,21 +93,47 @@ impl RobotRepository {
         Ok(test_run_id)
     }
 
-    async fn get_suites_by_test_run_id(
+    async fn get_suites_by_test_run_id_and_parent_suite_id(
         pool: &sqlx::Pool<sqlx::Postgres>,
         test_run_id: i32,
+        parent_suite_id: Option<i32>,
     ) -> Result<Vec<SuiteDB>, sqlx::Error> {
-        let suites = query_file_as!(
-            SuiteDBPartial,
-            "./src/repositories/sql/robot/get_suites_by_test_run_id.sql",
-            test_run_id
-        )
+        Box::pin(async move {
+
+        let mut query_builder = sqlx::QueryBuilder::new(
+            r#"
+            SELECT s.id,
+                   s.name,
+                   s.source,
+                   s.status,
+                   s.start_time,
+                   s.end_time,
+                   s.identifier,
+                   s.doc
+            FROM suites s
+            WHERE s.test_run_id = 
+            "#
+        );
+
+        query_builder.push_bind(test_run_id);
+
+        if let Some(parent_suite_id) = parent_suite_id {
+            query_builder.push(" AND s.parent_suite_id = ").push_bind(parent_suite_id);
+        } else {
+            query_builder.push(" AND s.parent_suite_id IS NULL");
+        }
+
+        query_builder.push(" ORDER BY s.start_time ASC");
+        
+        let suites: Vec<SuiteDBPartial> = query_builder
+        .build_query_as()
         .fetch_all(pool)
         .await
-        .inspect_err(|e| tracing::error!("Query get_suites_by_test_run_id failed: {:?}", e))?;
+        .inspect_err(|e| tracing::error!("Query get_suites_by_test_run_id_and_parent_suite_id failed: {:?}", e))?;
 
         let mut suite_dbs = Vec::new();
         for suite in suites {
+            let suites = RobotRepository::get_suites_by_test_run_id_and_parent_suite_id(pool, test_run_id, suite.id).await?;
             let tests = RobotRepository::get_tests_by_suite_id(pool, suite.id.unwrap()).await?;
             suite_dbs.push(SuiteDB {
                 id: suite.id,
@@ -116,11 +144,12 @@ impl RobotRepository {
                 end_time: suite.end_time,
                 doc: suite.doc.clone(),
                 identifier: suite.identifier.clone(),
-                suites: Vec::new(),
+                suites,
                 tests,
             });
         }
         Ok(suite_dbs)
+    }).await
     }
 
     async fn get_tests_by_suite_id(

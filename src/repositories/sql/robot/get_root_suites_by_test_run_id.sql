@@ -8,4 +8,5 @@ SELECT s.id,
     s.doc
 FROM suites s
 WHERE s.test_run_id = $1
+    AND s.parent_suite_id IS NULL
 ORDER BY s.start_time ASC;
