@@ -12,7 +12,10 @@ const config = {
 			precompress: false,
 			strict: true,
 			fallback: 'index.html',
-		})
+		}),
+		alias: {
+			"@/*": "./path/to/lib/*",
+		},
 	}
 };
 
