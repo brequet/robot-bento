@@ -357,6 +357,9 @@ impl RobotRepository {
                 if let Some(setup_kw) = &suite.setup_keyword {
                     RobotRepository::insert_suite_keyword(pool, id, SuiteKeywordType::Setup, setup_kw.clone()).await?;
                 }
+                if let Some(teardown_kw) = &suite.teardown_keyword {
+                    RobotRepository::insert_suite_keyword(pool, id, SuiteKeywordType::Teardown, teardown_kw.clone()).await?;
+                }
             }
 
             Ok(())
