@@ -27,16 +27,10 @@ pub struct SuiteDB {
     pub end_time: NaiveDateTime,
     pub doc: Option<String>,
     pub identifier: String,
-    // - setup kw
-    // - suites
-    // - tests
-    // - teardown kw
     pub setup_keyword: Option<parser::Keyword>,
     pub suites: Vec<SuiteDB>,
     pub tests: Vec<TestDB>,
     pub teardown_keyword: Option<parser::Keyword>,
-    // pub teardown_keyword: Option<KeywordDB>,
-    // TODO: children
 }
 
 #[derive(Debug, Serialize)]
@@ -44,7 +38,6 @@ pub struct TestDB {
     pub id: Option<i32>,
     pub name: String,
     pub line: i32,
-    // TODO: keywords
     pub identifier: String,
     pub tags: Vec<String>,
     pub status: String,
@@ -52,6 +45,7 @@ pub struct TestDB {
     pub end_time: NaiveDateTime,
     pub doc: Option<String>,
     pub timeout: Option<String>,
+    // pub keywords: Vec<parser::BaseBody>, TODO: keywords
 }
 
 // #[derive(Debug, Serialize)]

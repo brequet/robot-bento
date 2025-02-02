@@ -1,14 +1,24 @@
-use actix_web::{get, web, Error, HttpResponse};
+use actix_multipart::{
+    form::{json::Json as MpJson, tempfile::TempFile, MultipartForm},
+    test,
+};
+use actix_web::{get, post, web, Error, HttpResponse};
+use serde::Deserialize;
+use serde_json::json;
 use sqlx::PgPool;
-use tracing::error;
+use tracing::{error, info};
 
-use crate::services::{self, robot::RobotService};
+use crate::services::{
+    parser::{ParserError, RobotOutputParserService},
+    robot::RobotService,
+};
 
 pub fn init(cfg: &mut web::ServiceConfig, pool: web::Data<PgPool>) {
     cfg.app_data(pool).service(
         web::scope("/api/robot")
             .service(get_all_test_runs)
-            .service(get_test_run),
+            .service(get_test_run)
+            .service(upload_robot_output),
     );
 }
 
@@ -38,6 +48,68 @@ async fn get_test_run(
         Err(e) => {
             error!("Error getting test run: {:?}", e);
             Ok(HttpResponse::InternalServerError().finish())
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RobotOutputMetadata {
+    pub app_name: String,
+    pub app_version: String,
+    /*
+    Metadata ideas:
+    - test env (staging, prod, etc)
+    - triggering system (jenkins, github, etc)
+    - robot project git hash
+    - project git hash
+    - jenkins URL / build number for linking back
+     */
+}
+
+#[derive(Debug, MultipartForm)]
+pub struct RobotOuputUploadForm {
+    #[multipart(limit = "500MB")]
+    pub file: TempFile,
+    pub metadata: MpJson<RobotOutputMetadata>,
+}
+
+#[post("/upload")]
+async fn upload_robot_output(
+    MultipartForm(form): MultipartForm<RobotOuputUploadForm>,
+    pool: web::Data<PgPool>,
+) -> Result<HttpResponse, Error> {
+    let file_name = form.file.file_name.unwrap_or_default();
+    info!(
+        "Processing upload: {} [{} - {}]",
+        file_name, form.metadata.app_name, form.metadata.app_version
+    );
+
+    let file_path = form.file.file.path();
+
+    match RobotOutputParserService::from_file(file_name, file_path) {
+        Ok(test_run) => {
+            // TODO: save metadata repo side for test run
+            match RobotService::save_test_run(&pool, test_run).await {
+                Ok(_) => Ok(HttpResponse::Ok().finish()),
+                Err(e) => {
+                    error!("Failed to save test run: {}", e);
+                    Ok(HttpResponse::InternalServerError().json(json!({
+                        "error": "Failed to save test run"
+                    })))
+                }
+            }
+        }
+        Err(ParserError::InvalidFileExtension(message)) => {
+            error!("Invalid file extension: {}", message);
+            Ok(HttpResponse::BadRequest().json(json!({
+                "error": "Invalid file extension, expected XML"
+            })))
+        }
+        Err(e) => {
+            error!("Failed to process XML: {}", e);
+            Ok(HttpResponse::InternalServerError().json(json!({
+                "error": "Failed to process XML file"
+            })))
         }
     }
 }

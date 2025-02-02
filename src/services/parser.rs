@@ -1,6 +1,8 @@
 use quick_xml::{de::from_str, DeError};
 use serde::{Deserialize, Serialize};
-use std::fs;
+use std::{fs, path::Path};
+use thiserror::Error;
+use tracing::info;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct TestRun {
@@ -346,6 +348,36 @@ pub struct StatisticsTag {
 pub struct Errors {
     #[serde(rename = "msg", default)]
     pub messages: Vec<Message>,
+}
+
+#[derive(Error, Debug)]
+pub enum ParserError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("XML deserialization error: {0}")]
+    Deserialization(#[from] quick_xml::DeError),
+    #[error("Invalid file extension")]
+    InvalidFileExtension(String),
+}
+
+pub struct RobotOutputParserService;
+
+impl RobotOutputParserService {
+    pub fn from_file<P: AsRef<Path>>(file_name: String, path: P) -> Result<TestRun, ParserError> {
+        info!("Parsing file: {:?}", path.as_ref());
+
+        let extension = file_name.split('.').last().unwrap_or("no extension");
+        if extension != "xml" {
+            return Err(ParserError::InvalidFileExtension(extension.to_string()));
+        }
+
+        let content = fs::read_to_string(path)?;
+        Self::from_content(&content)
+    }
+
+    pub fn from_content(content: &str) -> Result<TestRun, ParserError> {
+        quick_xml::de::from_str(content).map_err(ParserError::from)
+    }
 }
 
 // TODO: for better perf, stream the XML instead of reading it all at once
