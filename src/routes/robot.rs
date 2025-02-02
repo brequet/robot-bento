@@ -9,6 +9,7 @@ use sqlx::PgPool;
 use tracing::{error, info};
 
 use crate::services::{
+    self,
     parser::{ParserError, RobotOutputParserService},
     robot::RobotService,
 };
@@ -52,25 +53,27 @@ async fn get_test_run(
     }
 }
 
+/*
+Metadata ideas:
+- test env (staging, prod, etc)
+- triggering system (jenkins, github, etc)
+- robot project git hash
+- project git hash
+- jenkins URL / build number for linking back
+ */
 #[derive(Debug, Deserialize)]
-pub struct RobotOutputMetadata {
+pub struct RobotTestRunMetadata {
+    #[serde(rename = "appName")]
     pub app_name: String,
+    #[serde(rename = "appVersion")]
     pub app_version: String,
-    /*
-    Metadata ideas:
-    - test env (staging, prod, etc)
-    - triggering system (jenkins, github, etc)
-    - robot project git hash
-    - project git hash
-    - jenkins URL / build number for linking back
-     */
 }
 
 #[derive(Debug, MultipartForm)]
 pub struct RobotOuputUploadForm {
     #[multipart(limit = "500MB")]
     pub file: TempFile,
-    pub metadata: MpJson<RobotOutputMetadata>,
+    pub metadata: MpJson<RobotTestRunMetadata>,
 }
 
 #[post("/upload")]
@@ -88,13 +91,18 @@ async fn upload_robot_output(
 
     match RobotOutputParserService::from_file(file_name, file_path) {
         Ok(test_run) => {
-            // TODO: save metadata repo side for test run
-            match RobotService::save_test_run(&pool, test_run).await {
+            let metadata = services::robot::TestRunMetadata {
+                app_name: form.metadata.app_name.clone(),
+                app_version: form.metadata.app_version.clone(),
+            };
+
+            match RobotService::save_test_run(&pool, test_run, metadata).await {
                 Ok(_) => Ok(HttpResponse::Ok().finish()),
                 Err(e) => {
-                    error!("Failed to save test run: {}", e);
+                    let error_message = format!("Failed to save test run: {}", e);
+                    error!(error_message);
                     Ok(HttpResponse::InternalServerError().json(json!({
-                        "error": "Failed to save test run"
+                        "error": error_message
                     })))
                 }
             }

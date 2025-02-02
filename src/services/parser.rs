@@ -1,5 +1,7 @@
+use actix_multipart::test;
 use quick_xml::{de::from_str, DeError};
 use serde::{Deserialize, Serialize};
+use sha1::Digest;
 use std::{fs, path::Path};
 use thiserror::Error;
 use tracing::info;
@@ -20,6 +22,7 @@ pub struct TestRun {
     pub statistics: Statistics,
     #[serde(rename = "errors")]
     pub errors: Errors,
+    pub sha1: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -372,7 +375,15 @@ impl RobotOutputParserService {
         }
 
         let content = fs::read_to_string(path)?;
-        Self::from_content(&content)
+
+        let mut test_run = Self::from_content(&content)?;
+
+        let mut hasher = sha1::Sha1::new();
+        hasher.update(&content);
+        let hash = format!("{:x}", hasher.finalize());
+        test_run.sha1 = Some(hash);
+
+        Ok(test_run)
     }
 
     pub fn from_content(content: &str) -> Result<TestRun, ParserError> {

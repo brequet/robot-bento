@@ -11,10 +11,14 @@ pub struct TestRunDB {
     pub generator: String,
     pub generated_date: NaiveDateTime,
     pub schema_version: String,
-    // TODO sha1: String,
+    pub imported_date: Option<NaiveDateTime>,
     pub suites: Vec<SuiteDB>,
     pub statistics: Vec<StatDB>,
     pub errors: Vec<ErrorDB>,
+    pub sha1: Option<String>,
+    // Metadata
+    pub app_name: String,
+    pub app_version: String,
 }
 
 #[derive(Debug, Serialize)]

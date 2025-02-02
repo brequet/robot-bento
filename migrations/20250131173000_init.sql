@@ -4,7 +4,10 @@ CREATE TABLE test_runs (
     generator TEXT NOT NULL,
     schema_version TEXT NOT NULL,
     generated_date TIMESTAMP NOT NULL,
-    imported_date TIMESTAMP DEFAULT NOW()
+    application_name TEXT NOT NULL,
+    application_version TEXT NOT NULL,
+    sha1 TEXT UNIQUE,
+    imported_date TIMESTAMP DEFAULT NOW() NOT NULL
 );
 CREATE TABLE suites (
     id SERIAL PRIMARY KEY,

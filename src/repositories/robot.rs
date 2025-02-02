@@ -9,6 +9,10 @@ struct TestRunDBPartial {
     pub generator: String,
     pub generated_date: NaiveDateTime,
     pub schema_version: String,
+    pub application_name: String,
+    pub application_version: String,
+    pub sha1: Option<String>,
+    pub imported_date: NaiveDateTime,
 }
 
 #[derive(sqlx::FromRow)]
@@ -81,6 +85,10 @@ impl RobotRepository {
                 generator: test_run.generator,
                 generated_date: test_run.generated_date,
                 schema_version: test_run.schema_version,
+                app_name: test_run.application_name,
+                app_version: test_run.application_version,
+                sha1: test_run.sha1,
+                imported_date: Some(test_run.imported_date),
                 suites,
                 statistics,
                 errors,
@@ -117,10 +125,26 @@ impl RobotRepository {
             generator: test_run.generator,
             generated_date: test_run.generated_date,
             schema_version: test_run.schema_version,
+            app_name: test_run.application_name,
+            app_version: test_run.application_version,
+            sha1: test_run.sha1,
+            imported_date: Some(test_run.imported_date),
             suites,
             statistics,
             errors,
         }))
+    }
+
+    pub async fn is_sha1_already_inserted(pool: &PgPool, sha1: &str) -> Result<bool, sqlx::Error> {
+        let is_inserted: Option<bool> = query_scalar!(
+            "SELECT EXISTS(SELECT 1 FROM test_runs WHERE sha1 = $1)",
+            sha1
+        )
+        .fetch_one(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query is_sha1_already_inserted failed: {:?}", e))?;
+
+        Ok(is_inserted.unwrap_or(true))
     }
 
     pub async fn insert_test_run(pool: &PgPool, test_run: &TestRunDB) -> Result<i32, sqlx::Error> {
@@ -129,7 +153,10 @@ impl RobotRepository {
             test_run.rpa,
             test_run.generator,
             test_run.generated_date,
-            test_run.schema_version
+            test_run.schema_version,
+            test_run.app_name,
+            test_run.app_version,
+            test_run.sha1
         )
         .fetch_one(pool)
         .await

@@ -1,15 +1,22 @@
 use chrono::{NaiveDateTime, ParseResult};
 
 use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB};
-use crate::services::parser;
+use crate::services::{self, parser};
 
-pub fn map_test_run(test_run: &parser::TestRun) -> Result<TestRunDB, chrono::ParseError> {
+pub fn map_test_run(
+    test_run: &parser::TestRun,
+    metadata: &services::robot::TestRunMetadata,
+) -> Result<TestRunDB, chrono::ParseError> {
     Ok(TestRunDB {
         id: None,
+        imported_date: None,
         rpa: test_run.rpa,
         generator: test_run.generator.clone(),
         generated_date: map_timestamp(&test_run.generated_date.clone())?,
         schema_version: test_run.schema_version.clone(),
+        sha1: test_run.sha1.clone(),
+        app_name: metadata.app_name.clone(),
+        app_version: metadata.app_version.clone(),
         suites: map_suites(&test_run.suites),
         statistics: map_statistics(&test_run.statistics),
         errors: map_errors(&test_run.errors),
