@@ -18,16 +18,16 @@ async fn main() -> std::io::Result<()> {
     let pool = config::database::setup_database().await;
 
     // let file_path = "./src/services/resources/output_simplified.xml";
-    // let file_path = "./robot-data-sample/8-tests-1-ko/output.xml";
-    // let result = services::parser::get_test_run_from_xml(&file_path);
-    // match result {
-    //     Ok(test_run) => {
-    //         if let Err(e) = services::robot::RobotService::save_test_run(&pool, test_run).await {
-    //             println!("Ingest error: {:?}", e);
-    //         }
-    //     }
-    //     Err(e) => println!("Error: {:?}", e),
-    // }
+    let file_path = "./robot-data-sample/8-tests-1-ko/output.xml";
+    let result = services::parser::get_test_run_from_xml(&file_path);
+    match result {
+        Ok(test_run) => {
+            if let Err(e) = services::robot::RobotService::save_test_run(&pool, test_run).await {
+                println!("Ingest error: {:?}", e);
+            }
+        }
+        Err(e) => println!("Error: {:?}", e),
+    }
 
     let server_config = config::server::load();
     let addr = format!("127.0.0.1:{}", server_config.port);

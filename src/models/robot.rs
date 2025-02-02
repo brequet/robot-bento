@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use serde::Serialize;
 use sqlx::FromRow;
 
-use crate::services::parser::Test;
+use crate::services::parser::{self, Test};
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct TestRunDB {
@@ -31,9 +31,10 @@ pub struct SuiteDB {
     // - suites
     // - tests
     // - teardown kw
-    // pub setup_keyword: Option<KeywordDB>,
+    pub setup_keyword: Option<parser::Keyword>,
     pub suites: Vec<SuiteDB>,
     pub tests: Vec<TestDB>,
+    pub teardown_keyword: Option<parser::Keyword>,
     // pub teardown_keyword: Option<KeywordDB>,
     // TODO: children
 }

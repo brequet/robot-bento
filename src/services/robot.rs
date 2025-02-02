@@ -1,4 +1,5 @@
 use sqlx::PgPool;
+use tracing::info;
 
 use crate::{models::robot::TestRunDB, repositories::robot::RobotRepository};
 
@@ -15,13 +16,20 @@ impl RobotService {
         match test_run {
             Ok(test_run) => match RobotRepository::insert_test_run(pool, &test_run).await {
                 Ok(test_run_id) => {
-                    println!("Ingested test run with id: {}", test_run_id); // TODO: better logging
+                    info!("Saved test run, id: {}", test_run_id);
                 }
                 Err(e) => return Err(Box::new(e)),
             },
             Err(e) => return Err(Box::new(e)),
         };
         Ok(())
+    }
+
+    pub async fn get_all_test_runs(
+        pool: &PgPool,
+    ) -> Result<Vec<TestRunDB>, Box<dyn std::error::Error>> {
+        let test_runs = RobotRepository::get_all_test_runs(pool).await?;
+        Ok(test_runs)
     }
 
     pub async fn get_test_run_by_id(

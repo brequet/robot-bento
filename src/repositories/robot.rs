@@ -1,4 +1,4 @@
-use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB};
+use crate::{models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}, services::parser::{self, Keyword}};
 use chrono::NaiveDateTime;
 use sqlx::{query_file, query_file_as, query_scalar, PgPool};
 
@@ -24,6 +24,12 @@ struct SuiteDBPartial {
 }
 
 #[derive(sqlx::FromRow)]
+pub struct SuiteKeywordDBPartial {
+    pub keyword_type: String,
+    pub keyword_value: parser::Keyword,
+}
+
+#[derive(sqlx::FromRow)]
 pub struct TestDBPartial {
     pub id: Option<i32>,
     pub name: String,
@@ -36,9 +42,54 @@ pub struct TestDBPartial {
     pub timeout: Option<String>,
 }
 
+enum SuiteKeywordType {
+    Setup,
+    Teardown,
+}
+
+impl SuiteKeywordType {
+    fn as_str(&self) -> &'static str {
+        match self {
+            SuiteKeywordType::Setup => "setup",
+            SuiteKeywordType::Teardown => "teardown",
+        }
+    }
+}
+
 pub struct RobotRepository;
 
 impl RobotRepository {
+
+    pub async fn get_all_test_runs(pool: &PgPool) -> Result<Vec<TestRunDB>, sqlx::Error> {
+        let test_runs = query_file_as!(
+            TestRunDBPartial,
+            "./src/repositories/sql/robot/get_all_test_runs.sql",
+        )
+        .fetch_all(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_test_run_by_id failed: {:?}", e))?;
+
+        let mut test_run_dbs = Vec::new();
+        for test_run in test_runs {
+            let suites = RobotRepository::get_suites_by_test_run_id_and_parent_suite_id(pool, test_run.id.unwrap(), None).await?;
+            let statistics = RobotRepository::get_test_run_statistics_by_test_run_id(pool, test_run.id.unwrap()).await?;
+            let errors = RobotRepository::get_test_run_errors_by_test_run_id(pool, test_run.id.unwrap()).await?;
+    
+            test_run_dbs.push({TestRunDB {
+                id: test_run.id,
+                rpa: test_run.rpa,
+                generator: test_run.generator,
+                generated_date: test_run.generated_date,
+                schema_version: test_run.schema_version,
+                suites,
+                statistics,
+                errors,
+            }})
+        }
+
+        Ok(test_run_dbs)
+    }
+    
     pub async fn get_test_run_by_id(
         pool: &PgPool,
         id: i32,
@@ -133,6 +184,7 @@ impl RobotRepository {
 
         let mut suite_dbs = Vec::new();
         for suite in suites {
+            let (setup_keyword, teardown_keyword) = RobotRepository::get_suite_keywords_by_suite_id(pool, suite.id.unwrap()).await?;
             let suites = RobotRepository::get_suites_by_test_run_id_and_parent_suite_id(pool, test_run_id, suite.id).await?;
             let tests = RobotRepository::get_tests_by_suite_id(pool, suite.id.unwrap()).await?;
             suite_dbs.push(SuiteDB {
@@ -144,12 +196,38 @@ impl RobotRepository {
                 end_time: suite.end_time,
                 doc: suite.doc.clone(),
                 identifier: suite.identifier.clone(),
+                setup_keyword,
                 suites,
                 tests,
+                teardown_keyword
             });
         }
         Ok(suite_dbs)
     }).await
+    }
+
+    async fn get_suite_keywords_by_suite_id(
+        pool: &sqlx::Pool<sqlx::Postgres>,
+        suite_id: i32
+    ) -> Result<(Option<parser::Keyword>, Option<parser::Keyword>), sqlx::Error> {
+        let keywords = sqlx::query!(
+            "SELECT type as keyword_type, value as keyword_value FROM suite_keywords WHERE suite_id = $1",
+            suite_id
+        )
+        .fetch_all(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_suite_keywords_by_suite_id failed: {:?}", e))?;
+
+        Ok((
+            keywords
+                .iter()
+                .find(|k| k.keyword_type == "setup")
+                .map(|k| serde_json::from_value::<Keyword>(k.keyword_value.clone()).unwrap()),
+            keywords
+                .iter()
+                .find(|k| k.keyword_type == "teardown")
+                .map(|k| serde_json::from_value::<Keyword>(k.keyword_value.clone()).unwrap())
+        ))
     }
 
     async fn get_tests_by_suite_id(
@@ -276,10 +354,40 @@ impl RobotRepository {
                 if !suite.tests.is_empty() {
                     RobotRepository::insert_tests(pool, id, &suite.tests).await?;
                 }
+                if let Some(setup_kw) = &suite.setup_keyword {
+                    RobotRepository::insert_suite_keyword(pool, id, SuiteKeywordType::Setup, setup_kw.clone()).await?;
+                }
             }
 
             Ok(())
         }).await
+    }
+
+    async fn insert_suite_keyword(
+        pool: &PgPool,
+        suite_id: i32,
+        keyword_type: SuiteKeywordType,
+        keyword: parser::Keyword,
+    ) -> Result<(), sqlx::Error> {
+        let json_keyword = match serde_json::to_value(&keyword) {
+            Ok(json) => json,
+            Err(e) => {
+                tracing::error!("Failed to serialize keyword: {:?}", e);
+                return Err(sqlx::Error::Protocol("Failed to serialize keyword".into()));
+            }
+        };
+
+        query_file!(
+            "./src/repositories/sql/robot/insert_suite_keyword.sql",
+            suite_id,
+            keyword_type.as_str(),
+            json_keyword
+        )
+        .execute(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query insert_suite_keyword failed: {:?}", e))?;
+
+        Ok(())
     }
 
     async fn insert_tests(

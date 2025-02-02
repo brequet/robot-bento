@@ -21,6 +21,19 @@ fn map_suites(suites: &Vec<parser::Suite>) -> Vec<SuiteDB> {
 }
 
 fn map_suite(suite: &parser::Suite) -> SuiteDB {
+    let setup_keyword = match &suite.children.first() {
+        Some(parser::SuiteChildren::Keyword(keyword)) => Some(keyword.clone()),
+        _ => None,
+    };
+    let teardown_keyword = if suite.children.len() > 1 {
+        match &suite.children.last() {
+            Some(parser::SuiteChildren::Keyword(keyword)) => Some(keyword.clone()),
+            _ => None,
+        }
+    } else {
+        None
+    };
+
     SuiteDB {
         id: None,
         name: suite.name.clone(),
@@ -30,6 +43,7 @@ fn map_suite(suite: &parser::Suite) -> SuiteDB {
         end_time: map_timestamp(&suite.status.end_time).unwrap(),
         identifier: suite.id.clone(),
         doc: suite.doc.clone(),
+        setup_keyword,
         suites: suite
             .children
             .iter()
@@ -46,6 +60,7 @@ fn map_suite(suite: &parser::Suite) -> SuiteDB {
                 _ => None,
             })
             .collect(),
+        teardown_keyword,
     }
 }
 

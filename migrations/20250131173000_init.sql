@@ -18,6 +18,11 @@ CREATE TABLE suites (
     parent_suite_id INTEGER,
     doc TEXT
 );
+CREATE TABLE suite_keywords (
+    suite_id INTEGER NOT NULL,
+    type TEXT NOT NULL,
+    value JSONB NOT NULL
+);
 CREATE TABLE tests (
     id SERIAL PRIMARY KEY,
     suite_id INTEGER NOT NULL,

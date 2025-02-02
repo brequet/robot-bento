@@ -73,7 +73,7 @@ pub struct Test {
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq)]
 pub enum BaseBody {
     // 'Keyword', 'For', 'While', 'Group', 'If', 'Try', 'Var', 'Return', 'Continue', 'Break', 'Message', 'Error'
     #[serde(rename = "kw")]
@@ -101,25 +101,25 @@ pub enum BaseBody {
     // missing "Error" ?
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq)]
 pub struct Keyword {
-    #[serde(rename = "@name")]
+    #[serde(alias = "@name")]
     pub name: String,
-    #[serde(rename = "@owner")] // v5
+    #[serde(alias = "@owner")] // v5
     pub owner: Option<String>,
-    #[serde(rename = "@library")] // v4
+    #[serde(alias = "@library")] // v4
     pub library: Option<String>,
-    #[serde(rename = "@type")]
+    #[serde(alias = "@type")]
     pub type_: Option<String>,
     #[serde(rename = "msg", default)]
     pub msg: Vec<Message>,
-    #[serde(rename = "$value", default)]
+    #[serde(alias = "$value", default)]
     pub keywords: Vec<BaseBody>,
     #[serde(rename = "var", default)]
     pub var: Vec<String>,
-    #[serde(rename = "arg", default)]
+    #[serde(alias = "arg", default)]
     pub args: Vec<String>,
-    #[serde(rename = "tag", default)]
+    #[serde(alias = "tag", default)]
     pub tags: Vec<String>,
     #[serde(rename = "doc")]
     pub doc: Option<String>,
@@ -129,172 +129,172 @@ pub struct Keyword {
     pub status: Option<Status>,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct For {
-    #[serde(rename = "@flavor")]
+    #[serde(alias = "@flavor")]
     pub flavor: String, // 'IN', 'IN RANGE', 'IN ENUMERATE', 'IN ZIP'
-    #[serde(rename = "@start")]
+    #[serde(alias = "@start")]
     pub start: Option<String>,
-    #[serde(rename = "@mode")]
+    #[serde(alias = "@mode")]
     pub mode: Option<String>,
-    #[serde(rename = "@fill")]
+    #[serde(alias = "@fill")]
     pub fill: Option<String>,
-    #[serde(rename = "iter", default)]
+    #[serde(alias = "iter", default)]
     pub iters: Vec<ForIter>,
-    #[serde(rename = "var", default)]
+    #[serde(alias = "var", default)]
     pub vars: Vec<String>,
-    #[serde(rename = "value", default)]
+    #[serde(alias = "value", default)]
     pub values: Vec<String>,
     #[serde(rename = "status")]
     pub status: Status,
 }
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct ForIter {
-    #[serde(rename = "$value", default)]
+    #[serde(alias = "$value", default)]
     pub children: Vec<BaseBody>,
-    #[serde(rename = "var", default)]
+    #[serde(alias = "var", default)]
     pub vars: Vec<ForIterVar>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct ForIterVar {
-    #[serde(rename = "@name")]
+    #[serde(alias = "@name")]
     pub name: String,
-    #[serde(rename = "$text")]
+    #[serde(alias = "$text")]
     pub value: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct While {
-    #[serde(rename = "@condition")]
+    #[serde(alias = "@condition")]
     pub condition: Vec<String>,
-    #[serde(rename = "@limit")]
+    #[serde(alias = "@limit")]
     pub limit: Vec<String>,
-    #[serde(rename = "@on_limit")]
+    #[serde(alias = "@on_limit")]
     pub on_limit: Vec<String>,
-    #[serde(rename = "@on_limit_message")]
+    #[serde(alias = "@on_limit_message")]
     pub on_limit_message: Vec<String>,
-    #[serde(rename = "iter", default)]
+    #[serde(alias = "iter", default)]
     pub iters: Vec<WhileIter>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct WhileIter {
-    #[serde(rename = "$value", default)]
+    #[serde(alias = "$value", default)]
     pub children: Vec<BaseBody>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Group {
     #[serde(rename = "@name")]
     pub name: String,
-    #[serde(rename = "$value", default)]
+    #[serde(alias = "$value", default)]
     pub children: Vec<BaseBody>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct If {
-    #[serde(rename = "branch", default)]
+    #[serde(alias = "branch", default)]
     pub branches: Vec<IfBranch>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct IfBranch {
-    #[serde(rename = "@type")]
+    #[serde(alias = "@type")]
     pub type_: String,
-    #[serde(rename = "@condition")]
+    #[serde(alias = "@condition")]
     pub condition: Option<String>,
-    #[serde(rename = "$value", default)]
+    #[serde(alias = "$value", default)]
     pub children: Vec<BaseBody>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Try {
-    #[serde(rename = "branch", default)]
+    #[serde(alias = "branch", default)]
     pub branches: Vec<TryBranch>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct TryBranch {
-    #[serde(rename = "@type")]
+    #[serde(alias = "@type")]
     pub type_: String,
-    #[serde(rename = "@pattern_type")]
+    #[serde(alias = "@pattern_type")]
     pub pattern_type: Option<String>,
-    #[serde(rename = "@assign")]
+    #[serde(alias = "@assign")]
     pub assign: Option<String>,
-    #[serde(rename = "$value", default)]
+    #[serde(alias = "$value", default)]
     pub children: Vec<BaseBody>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Var {
-    #[serde(rename = "@name")]
+    #[serde(alias = "@name")]
     pub name: String,
-    #[serde(rename = "@scope")]
+    #[serde(alias = "@scope")]
     pub scope: Option<String>,
-    #[serde(rename = "@separator")]
+    #[serde(alias = "@separator")]
     pub separator: Option<String>,
     #[serde(rename = "msg")]
     pub message: Message,
-    #[serde(rename = "var", default)]
+    #[serde(alias = "var", default)]
     pub vars: Vec<String>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Return {
-    #[serde(rename = "value", default)]
+    #[serde(alias = "value", default)]
     pub value: Vec<String>,
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Continue {
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Break {
     #[serde(rename = "status")]
     pub status: Status,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Message {
-    #[serde(rename = "@timestamp")]
+    #[serde(alias = "@timestamp")]
     pub timestamp: String,
-    #[serde(rename = "@level")]
+    #[serde(alias = "@level")]
     pub level: String,
-    #[serde(rename = "$text")]
+    #[serde(alias = "$text")]
     pub value: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Status {
-    #[serde(rename = "@status")]
+    #[serde(alias = "@status")]
     pub status: String,
-    #[serde(rename = "@starttime")]
+    #[serde(alias = "@starttime")]
     pub start_time: String,
-    #[serde(rename = "@endtime")]
+    #[serde(alias = "@endtime")]
     pub end_time: String,
 }
 
@@ -348,6 +348,7 @@ pub struct Errors {
     pub messages: Vec<Message>,
 }
 
+// TODO: for better perf, stream the XML instead of reading it all at once
 pub fn get_test_run_from_xml(xml_file_path: &str) -> Result<TestRun, DeError> {
     let xml_content = fs::read_to_string(xml_file_path).expect("Unable to read file");
     from_str(&xml_content)
