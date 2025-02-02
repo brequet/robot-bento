@@ -15,7 +15,7 @@ pub struct TestRunDB {
     pub suites: Vec<SuiteDB>,
     pub statistics: Vec<StatDB>,
     pub errors: Vec<ErrorDB>,
-    pub sha1: Option<String>,
+    pub sha1: String,
     // Metadata
     pub app_name: String,
     pub app_version: String,

@@ -11,7 +11,7 @@ struct TestRunDBPartial {
     pub schema_version: String,
     pub application_name: String,
     pub application_version: String,
-    pub sha1: Option<String>,
+    pub sha1: String,
     pub imported_date: NaiveDateTime,
 }
 

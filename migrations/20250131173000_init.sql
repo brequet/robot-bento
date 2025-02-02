@@ -6,7 +6,7 @@ CREATE TABLE test_runs (
     generated_date TIMESTAMP NOT NULL,
     application_name TEXT NOT NULL,
     application_version TEXT NOT NULL,
-    sha1 TEXT UNIQUE,
+    sha1 TEXT UNIQUE NOT NULL,
     imported_date TIMESTAMP DEFAULT NOW() NOT NULL
 );
 CREATE TABLE suites (

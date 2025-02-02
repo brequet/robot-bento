@@ -18,7 +18,7 @@ impl RobotService {
         parsed_test_run: TestRun,
         metadata: TestRunMetadata,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let file_sha1 = parsed_test_run.sha1.as_ref().unwrap();
+        let file_sha1 = parsed_test_run.sha1.as_ref();
         if RobotRepository::is_sha1_already_inserted(pool, file_sha1).await? {
             warn!("Test run with sha1 {} already exists", &file_sha1);
             Err("Test run already imported")?;

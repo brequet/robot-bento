@@ -22,7 +22,8 @@ pub struct TestRun {
     pub statistics: Statistics,
     #[serde(rename = "errors")]
     pub errors: Errors,
-    pub sha1: Option<String>,
+    #[serde(skip)]
+    pub sha1: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -381,7 +382,7 @@ impl RobotOutputParserService {
         let mut hasher = sha1::Sha1::new();
         hasher.update(&content);
         let hash = format!("{:x}", hasher.finalize());
-        test_run.sha1 = Some(hash);
+        test_run.sha1 = hash;
 
         Ok(test_run)
     }

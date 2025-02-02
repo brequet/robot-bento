@@ -100,7 +100,7 @@ async fn upload_robot_output(
                 Ok(_) => Ok(HttpResponse::Ok().finish()),
                 Err(e) => {
                     let error_message = format!("Failed to save test run: {}", e);
-                    error!(error_message);
+                    error!("{}", error_message);
                     Ok(HttpResponse::InternalServerError().json(json!({
                         "error": error_message
                     })))
