@@ -83,6 +83,7 @@ fn map_test(test: &parser::Test) -> TestDB {
         end_time: map_timestamp(&test.status.end_time).unwrap(),
         doc: test.doc.clone(),
         timeout: test.timeout.clone(),
+        keywords: test.keywords.clone(),
     }
 }
 

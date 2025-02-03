@@ -2,7 +2,7 @@ use chrono::NaiveDateTime;
 use serde::Serialize;
 use sqlx::FromRow;
 
-use crate::services::parser::{self, Test};
+use crate::services::parser::{self};
 
 #[derive(Debug, Serialize, FromRow)]
 pub struct TestRunDB {
@@ -49,7 +49,7 @@ pub struct TestDB {
     pub end_time: NaiveDateTime,
     pub doc: Option<String>,
     pub timeout: Option<String>,
-    // pub keywords: Vec<parser::BaseBody>, TODO: keywords
+    pub keywords: Vec<parser::BaseBody>,
 }
 
 // #[derive(Debug, Serialize)]

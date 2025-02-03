@@ -28,12 +28,6 @@ struct SuiteDBPartial {
 }
 
 #[derive(sqlx::FromRow)]
-pub struct SuiteKeywordDBPartial {
-    pub keyword_type: String,
-    pub keyword_value: parser::Keyword,
-}
-
-#[derive(sqlx::FromRow)]
 pub struct TestDBPartial {
     pub id: Option<i32>,
     pub name: String,
@@ -284,6 +278,7 @@ impl RobotRepository {
                 doc: test.doc.clone(),
                 timeout: test.timeout.clone(),
                 tags,
+                keywords: Vec::new(), // TODO: option to fill it ? else its too much everytime
             })
         }
 
@@ -454,6 +449,9 @@ impl RobotRepository {
             if !test.tags.is_empty() {
                 RobotRepository::insert_test_tags(pool, id, &test.tags).await?
             }
+            if !test.keywords.is_empty() {
+                RobotRepository::insert_test_keywords(pool, id, &test.keywords).await?
+            }
         }
 
         Ok(())  
@@ -482,6 +480,31 @@ impl RobotRepository {
             .execute(pool)
             .await
             .inspect_err(|e| tracing::error!("Query insert_test_tags failed: {:?}", e))?;
+        Ok(())
+    }
+
+    async fn insert_test_keywords(
+        pool: &PgPool,
+        test_id: i32,
+        keywords: &Vec<parser::BaseBody>,
+    ) -> Result<(), sqlx::Error> {
+        let json_keywords = match serde_json::to_value(&keywords) {
+            Ok(json) => json,
+            Err(e) => {
+                tracing::error!("Failed to serialize keyword: {:?}", e);
+                return Err(sqlx::Error::Protocol("Failed to serialize keyword".into()));
+            }
+        };
+
+        query_file!(
+            "./src/repositories/sql/robot/insert_test_keywords.sql",
+            test_id,
+            json_keywords
+        )
+        .execute(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query insert_test_keywords failed: {:?}", e))?;
+
         Ok(())
     }
 

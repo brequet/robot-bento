@@ -38,6 +38,10 @@ CREATE TABLE tests (
     doc TEXT,
     timeout TEXT
 );
+CREATE TABLE test_keywords (
+    test_id INTEGER NOT NULL,
+    value JSONB NOT NULL
+);
 CREATE TABLE test_tags (
     test_id INTEGER NOT NULL,
     value TEXT NOT NULL,
