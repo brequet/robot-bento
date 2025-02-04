@@ -1,7 +1,4 @@
-use actix_multipart::{
-    form::{json::Json as MpJson, tempfile::TempFile, MultipartForm},
-    test,
-};
+use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartForm};
 use actix_web::{get, post, web, Error, HttpResponse};
 use serde::Deserialize;
 use serde_json::json;

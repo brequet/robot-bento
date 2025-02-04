@@ -7,7 +7,7 @@ pub async fn setup_database() -> PgPool {
     ensure_database_exists(&database_url).await;
 
     let pool = PgPoolOptions::new()
-        .max_connections(10)
+        .max_connections(20)
         .connect(&database_url)
         .await
         .expect("Failed to connect to the database");

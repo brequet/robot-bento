@@ -25,6 +25,7 @@ impl RobotService {
         }
 
         let test_run = mappers::robot::map_test_run(&parsed_test_run, &metadata);
+        info!("Saving test run with sha1 {}", file_sha1);
         match test_run {
             Ok(test_run) => match RobotRepository::insert_test_run(pool, &test_run).await {
                 Ok(test_run_id) => {
