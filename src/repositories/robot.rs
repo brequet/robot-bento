@@ -58,6 +58,29 @@ pub struct RobotRepository;
 
 impl RobotRepository {
 
+    pub async fn get_test_run_data_by_project_ids(pool: &PgPool, ) {
+        r#"
+        WITH total_count AS (
+            SELECT COUNT(*) as total_rows
+            FROM test_runs tr
+            WHERE tr.project_id = 2
+        )
+        SELECT DISTINCT ON (tr.project_id) 
+            tr.project_id,
+            total_count.total_rows as test_run_count,
+            tr.generated_date as last_test_run_date,
+            stats.pass_count as last_total_tests, 
+            stats.fail_count as last_failed_tests,
+            stats.skip_count as last_skipped_tests
+        FROM test_runs tr
+        JOIN test_run_statistics stats ON stats.test_run_id = tr.id
+        CROSS JOIN total_count
+        WHERE tr.project_id in (1, 2)
+        AND stats.stat_type = 'total'
+        ORDER BY tr.project_id, tr.generated_date DESC
+        "#
+    }
+
     pub async fn get_all_test_runs(pool: &PgPool) -> Result<Vec<TestRunDB>, sqlx::Error> {
         let test_runs = query_file_as!(
             TestRunDBPartial,
@@ -141,9 +164,10 @@ impl RobotRepository {
         Ok(is_inserted.unwrap_or(true))
     }
 
-    pub async fn insert_test_run(pool: &PgPool, test_run: &TestRunDB) -> Result<i32, sqlx::Error> {
+    pub async fn insert_test_run(pool: &PgPool, test_run: &TestRunDB, project_id: i32) -> Result<i32, sqlx::Error> {
         let result = query_file!(
             "./src/repositories/sql/robot/insert_test_run.sql",
+            project_id,
             test_run.rpa,
             test_run.generator,
             test_run.generated_date,

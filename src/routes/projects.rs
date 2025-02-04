@@ -2,7 +2,7 @@ use actix_web::{get, web, Error, HttpResponse};
 use sqlx::PgPool;
 use tracing::error;
 
-use crate::services::robot::RobotService;
+use crate::services::{projects::ProjectsService, robot::RobotService};
 
 pub fn init(cfg: &mut web::ServiceConfig, pool: web::Data<PgPool>) {
     cfg.app_data(pool)
@@ -11,7 +11,7 @@ pub fn init(cfg: &mut web::ServiceConfig, pool: web::Data<PgPool>) {
 
 #[get("")]
 async fn get_all_projects(pool: web::Data<PgPool>) -> Result<HttpResponse, Error> {
-    let projects = RobotService::get_all_test_runs(&pool).await;
+    let projects = ProjectsService::get_projects_overview(&pool).await;
 
     match projects {
         Ok(projects) => Ok(HttpResponse::Ok().json(projects)),

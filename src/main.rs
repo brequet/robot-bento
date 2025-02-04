@@ -33,6 +33,7 @@ async fn main() -> std::io::Result<()> {
                     .error_handler(handle_multipart_error),
             )
             .configure(|cfg| routes::robot::init(cfg, web::Data::new(pool.clone())))
+            .configure(|cfg| routes::projects::init(cfg, web::Data::new(pool.clone())))
             .service(web::scope("").default_service(web::to(serve_frontend)))
     })
     .bind(addr)?

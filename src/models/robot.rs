@@ -52,11 +52,6 @@ pub struct TestDB {
     pub keywords: Vec<parser::BaseBody>,
 }
 
-// #[derive(Debug, Serialize)]
-// pub struct KeywordDB {
-
-// }
-
 #[derive(Debug, Serialize)]
 pub struct StatDB {
     pub id: Option<i32>,

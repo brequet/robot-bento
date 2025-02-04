@@ -1,5 +1,11 @@
+CREATE TABLE projects (
+    id SERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    create_date TIMESTAMP DEFAULT NOW()
+);
 CREATE TABLE test_runs (
     id SERIAL PRIMARY KEY,
+    project_id INTEGER NOT NULL,
     rpa BOOLEAN NOT NULL,
     generator TEXT NOT NULL,
     schema_version TEXT NOT NULL,

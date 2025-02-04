@@ -2,16 +2,15 @@ use chrono::NaiveDateTime;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
-pub struct ProjectLight {
+pub struct ProjectOverview {
     pub id: i32,
-    pub application_name: String,
-    pub application_version: String,
+    pub name: String,
     pub test_run_count: i32,
-    pub last_test_run: TestRunLight,
+    pub last_test_run: ProjectTestRun,
 }
 
 #[derive(Debug, Serialize)]
-pub struct TestRunLight {
+pub struct ProjectTestRun {
     pub last_test_run_date: NaiveDateTime,
     pub total_tests: i32,
     pub passed_tests: i32,

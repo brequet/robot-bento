@@ -1,4 +1,5 @@
 INSERT INTO test_runs (
+        project_id,
         rpa,
         generator,
         generated_date,
@@ -7,5 +8,5 @@ INSERT INTO test_runs (
         application_version,
         sha1
     )
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id;
