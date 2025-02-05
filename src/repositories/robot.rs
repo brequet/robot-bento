@@ -40,6 +40,18 @@ pub struct TestDBPartial {
     pub timeout: Option<String>,
 }
 
+#[derive(sqlx::FromRow)]
+pub struct TestRunOverviewDB {
+    pub project_id: Option<i32>,
+    pub application_name: String,
+    pub application_version: String,
+    pub test_run_count: Option<i32>,
+    pub last_test_run_date: Option<NaiveDateTime>,
+    pub last_passed_tests: Option<i32>,
+    pub last_failed_tests: Option<i32>,
+    pub last_skipped_tests: Option<i32>,
+}
+
 enum SuiteKeywordType {
     Setup,
     Teardown,
@@ -58,27 +70,15 @@ pub struct RobotRepository;
 
 impl RobotRepository {
 
-    pub async fn get_test_run_data_by_project_ids(pool: &PgPool, ) {
-        r#"
-        WITH total_count AS (
-            SELECT COUNT(*) as total_rows
-            FROM test_runs tr
-            WHERE tr.project_id = 2
+    pub async fn get_test_run_data_by_project_ids(pool: &PgPool, project_ids: &Vec<i32>) -> Result<Vec<TestRunOverviewDB>, sqlx::Error> {
+        query_file_as!(
+            TestRunOverviewDB,
+            "./src/repositories/sql/robot/get_test_run_data_by_project_ids.sql",
+            project_ids
         )
-        SELECT DISTINCT ON (tr.project_id) 
-            tr.project_id,
-            total_count.total_rows as test_run_count,
-            tr.generated_date as last_test_run_date,
-            stats.pass_count as last_total_tests, 
-            stats.fail_count as last_failed_tests,
-            stats.skip_count as last_skipped_tests
-        FROM test_runs tr
-        JOIN test_run_statistics stats ON stats.test_run_id = tr.id
-        CROSS JOIN total_count
-        WHERE tr.project_id in (1, 2)
-        AND stats.stat_type = 'total'
-        ORDER BY tr.project_id, tr.generated_date DESC
-        "#
+        .fetch_all(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_test_run_data_by_project_ids failed: {:?}", e))
     }
 
     pub async fn get_all_test_runs(pool: &PgPool) -> Result<Vec<TestRunDB>, sqlx::Error> {

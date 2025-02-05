@@ -6,7 +6,7 @@ pub struct ProjectOverview {
     pub id: i32,
     pub name: String,
     pub test_run_count: i32,
-    pub last_test_run: ProjectTestRun,
+    pub last_test_run: Option<ProjectTestRun>,
 }
 
 #[derive(Debug, Serialize)]
@@ -16,5 +16,5 @@ pub struct ProjectTestRun {
     pub passed_tests: i32,
     pub failed_tests: i32,
     pub skipped_tests: i32,
-    pub elapsed_time: i32,
+    // pub elapsed_time: i32,
 }

@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use sqlx::PgPool;
 use tracing::{info, warn};
 
@@ -14,13 +15,16 @@ pub struct TestRunMetadata {
 }
 
 pub struct ProjectTestRunData {
+    pub project_id: i32,
+    pub application_name: String,
+    pub application_version: String,
     pub test_run_count: i32,
-    pub last_test_run_date: NaiveDateTime,
-    pub last_total_tests: i32,
-    pub last_passed_tests: i32,
-    pub last_failed_tests: i32,
-    pub last_skipped_tests: i32,
-    pub last_elapsed_time: i32,
+    pub last_test_run_date: Option<NaiveDateTime>,
+    pub last_total_tests: Option<i32>,
+    pub last_passed_tests: Option<i32>,
+    pub last_failed_tests: Option<i32>,
+    pub last_skipped_tests: Option<i32>,
+    // pub last_elapsed_time: i32,
 }
 
 pub struct RobotService;
@@ -62,8 +66,33 @@ impl RobotService {
         pool: &PgPool,
         project_ids: &Vec<i32>,
     ) -> Result<Vec<ProjectTestRunData>, Box<dyn std::error::Error>> {
-        let test_runs_data =
-            RobotRepository::get_test_run_data_by_project_ids(pool, project_ids).await?;
+        if project_ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let test_runs_data = RobotRepository::get_test_run_data_by_project_ids(pool, project_ids)
+            .await?
+            .iter()
+            .map(|test_run_data| {
+                let last_total_tests = test_run_data.last_passed_tests.or_else(|| Some(0)).unwrap()
+                    + test_run_data.last_failed_tests.or_else(|| Some(0)).unwrap()
+                    + test_run_data
+                        .last_skipped_tests
+                        .or_else(|| Some(0))
+                        .unwrap();
+                ProjectTestRunData {
+                    project_id: test_run_data.project_id.unwrap(),
+                    application_name: test_run_data.application_name.clone(),
+                    application_version: test_run_data.application_version.clone(),
+                    test_run_count: test_run_data.test_run_count.or_else(|| Some(0)).unwrap(),
+                    last_test_run_date: test_run_data.last_test_run_date,
+                    last_total_tests: Some(last_total_tests),
+                    last_passed_tests: test_run_data.last_passed_tests,
+                    last_failed_tests: test_run_data.last_failed_tests,
+                    last_skipped_tests: test_run_data.last_skipped_tests,
+                }
+            })
+            .collect();
         Ok(test_runs_data)
     }
 

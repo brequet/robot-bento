@@ -2,7 +2,7 @@ use actix_web::{get, web, Error, HttpResponse};
 use sqlx::PgPool;
 use tracing::error;
 
-use crate::services::{projects::ProjectsService, robot::RobotService};
+use crate::services::projects::ProjectsService;
 
 pub fn init(cfg: &mut web::ServiceConfig, pool: web::Data<PgPool>) {
     cfg.app_data(pool)
