@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_multipart::{form::MultipartFormConfig, MultipartError};
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
 use dotenv;
@@ -26,6 +27,12 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default()
+                    .allow_any_origin()
+                    .allow_any_method()
+                    .allow_any_header(),
+            )
             .app_data(
                 MultipartFormConfig::default()
                     .total_limit(1024 * 1024 * 1024) // 1 GB

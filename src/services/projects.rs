@@ -1,8 +1,10 @@
+use std::f32::consts::E;
+
 use sqlx::PgPool;
 use tracing::info;
 
 use crate::{
-    models::projects::{ProjectOverview, ProjectTestRun},
+    models::projects::{Project, ProjectOverview, ProjectTestRun},
     repositories::projects::{ProjectDB, ProjectsRepository},
 };
 
@@ -81,6 +83,26 @@ impl ProjectsService {
                 let project_id = ProjectsRepository::insert_project(pool, project).await?;
                 Ok(project_id)
             }
+        }
+    }
+
+    pub async fn get_project_by_id(
+        pool: &PgPool,
+        project_id: i32,
+    ) -> Result<Option<Project>, Box<dyn std::error::Error>> {
+        let project_data = ProjectsRepository::get_project_by_id(pool, project_id).await?;
+        match project_data {
+            Some(project_data) => {
+                let test_runs =
+                    RobotService::get_all_test_runs_by_project_id(pool, project_id).await?;
+                Ok(Some(Project {
+                    id: project_data.id.unwrap(),
+                    name: project_data.name,
+                    test_run_count: test_runs.len() as i32,
+                    test_runs: test_runs,
+                }))
+            }
+            None => Ok(None),
         }
     }
 }

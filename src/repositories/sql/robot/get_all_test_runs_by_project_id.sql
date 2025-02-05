@@ -8,4 +8,5 @@ SELECT tr.id,
     tr.sha1,
     tr.imported_date
 FROM test_runs tr
+WHERE tr.project_id = $1
 ORDER BY tr.generated_date DESC;

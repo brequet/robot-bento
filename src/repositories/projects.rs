@@ -26,6 +26,26 @@ impl ProjectsRepository {
         Ok(projects)
     }
 
+    pub async fn get_project_by_id(
+        pool: &PgPool,
+        project_id: i32,
+    ) -> Result<Option<ProjectDB>, sqlx::Error> {
+        let projects = sqlx::query_as!(
+            ProjectDB,
+            r#"
+            SELECT id, name, create_date
+            FROM projects
+            WHERE id = $1
+            "#,
+            project_id
+        )
+        .fetch_optional(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_project_by_id failed: {:?}", e))?;
+
+        Ok(projects)
+    }
+
     pub async fn get_project_id_by_name(
         pool: &PgPool,
         project_name: &str,

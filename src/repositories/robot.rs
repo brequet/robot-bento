@@ -88,7 +88,42 @@ impl RobotRepository {
         )
         .fetch_all(pool)
         .await
-        .inspect_err(|e| tracing::error!("Query get_test_run_by_id failed: {:?}", e))?;
+        .inspect_err(|e| tracing::error!("Query get_all_test_runs failed: {:?}", e))?;
+
+        let mut test_run_dbs = Vec::new();
+        for test_run in test_runs {
+            let suites = RobotRepository::get_suites_by_test_run_id_and_parent_suite_id(pool, test_run.id.unwrap(), None).await?;
+            let statistics = RobotRepository::get_test_run_statistics_by_test_run_id(pool, test_run.id.unwrap()).await?;
+            let errors = RobotRepository::get_test_run_errors_by_test_run_id(pool, test_run.id.unwrap()).await?;
+    
+            test_run_dbs.push({TestRunDB {
+                id: test_run.id,
+                rpa: test_run.rpa,
+                generator: test_run.generator,
+                generated_date: test_run.generated_date,
+                schema_version: test_run.schema_version,
+                app_name: test_run.application_name,
+                app_version: test_run.application_version,
+                sha1: test_run.sha1,
+                imported_date: Some(test_run.imported_date),
+                suites,
+                statistics,
+                errors,
+            }})
+        }
+
+        Ok(test_run_dbs)
+    }
+
+    pub async fn get_all_test_runs_by_project_id(pool: &PgPool, project_id: i32) -> Result<Vec<TestRunDB>, sqlx::Error> {
+        let test_runs = query_file_as!(
+            TestRunDBPartial,
+            "./src/repositories/sql/robot/get_all_test_runs_by_project_id.sql",
+            project_id
+        )
+        .fetch_all(pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_all_test_runs_by_project_id failed: {:?}", e))?;
 
         let mut test_run_dbs = Vec::new();
         for test_run in test_runs {

@@ -103,6 +103,14 @@ impl RobotService {
         Ok(test_runs)
     }
 
+    pub async fn get_all_test_runs_by_project_id(
+        pool: &PgPool,
+        project_id: i32,
+    ) -> Result<Vec<TestRunDB>, Box<dyn std::error::Error>> {
+        let test_runs = RobotRepository::get_all_test_runs_by_project_id(pool, project_id).await?;
+        Ok(test_runs)
+    }
+
     pub async fn get_test_run_by_id(
         pool: &PgPool,
         id: i32,
