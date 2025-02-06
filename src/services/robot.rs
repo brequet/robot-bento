@@ -69,12 +69,9 @@ impl RobotService {
             .await?
             .iter()
             .map(|test_run_data| {
-                let last_total_tests = test_run_data.last_passed_tests.or_else(|| Some(0)).unwrap()
-                    + test_run_data.last_failed_tests.or_else(|| Some(0)).unwrap()
-                    + test_run_data
-                        .last_skipped_tests
-                        .or_else(|| Some(0))
-                        .unwrap();
+                let last_total_tests = test_run_data.last_passed_tests.unwrap_or(0)
+                    + test_run_data.last_failed_tests.unwrap_or(0)
+                    + test_run_data.last_skipped_tests.unwrap_or(0);
                 ProjectTestRunData {
                     project_id: test_run_data.project_id.unwrap(),
                     application_name: test_run_data.application_name.clone(),
