@@ -1,18 +1,18 @@
 import type { TestRun } from './robot';
 
-export interface ProjectOverview {
+export interface ProjectOverviewResponse {
 	id: number;
 	name: string;
-	test_run_count: number;
-	last_test_run?: ProjectTestRun | null;
+	testRunCount: number;
+	lastTestRunSummary?: TestRunSummary | null;
 }
 
-export interface ProjectTestRun {
-	last_test_run_date: string;
-	total_tests: number;
-	passed_tests: number;
-	failed_tests: number;
-	skipped_tests: number;
+export interface TestRunSummary {
+	lastTestRunDate: string;
+	totalTests: number;
+	passedTests: number;
+	failedTests: number;
+	skippedTests: number;
 }
 
 export interface Project {

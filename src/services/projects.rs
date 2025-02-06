@@ -3,7 +3,10 @@ use std::sync::Arc;
 use tracing::info;
 
 use crate::{
-    models::projects::{Project, ProjectOverview, ProjectTestRun},
+    models::{
+        projects::api::{ProjectOverviewResponse, TestRunSummary},
+        projects_legacy::{Project, ProjectOverview, ProjectTestRun},
+    },
     repositories::projects::{ProjectDB, ProjectsRepository},
 };
 
@@ -24,13 +27,14 @@ impl ProjectsService {
 
     pub async fn get_projects_overview(
         &self,
-    ) -> Result<Vec<ProjectOverview>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<ProjectOverviewResponse>, Box<dyn std::error::Error>> {
         let projects = self.repository.get_projects().await?;
 
-        let project_ids: Vec<i32> = projects.iter().map(|p| p.id.unwrap()).collect();
         let project_test_run_data = self
             .robot_service
-            .get_test_run_data_by_project_ids(&project_ids)
+            .get_test_run_data_by_project_ids(
+                &projects.iter().map(|p| p.id.unwrap()).collect::<Vec<i32>>(),
+            )
             .await?;
 
         let project_overviews = projects
@@ -48,7 +52,7 @@ impl ProjectsService {
                 let project_test_run = match test_run_data {
                     Some(data) => {
                         if data.last_test_run_date.is_some() {
-                            Some(ProjectTestRun {
+                            Some(TestRunSummary {
                                 last_test_run_date: data.last_test_run_date.unwrap(),
                                 total_tests: data.last_total_tests.unwrap(),
                                 passed_tests: data.last_passed_tests.unwrap(),
@@ -62,11 +66,12 @@ impl ProjectsService {
                     None => None,
                 };
 
-                ProjectOverview {
+                ProjectOverviewResponse {
                     id: project.id.unwrap(),
                     name: project.name.clone(),
+                    create_date: project.create_date.unwrap(),
                     test_run_count: test_run_count,
-                    last_test_run: project_test_run,
+                    last_test_run_summary: project_test_run,
                 }
             })
             .collect();

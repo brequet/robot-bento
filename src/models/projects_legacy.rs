@@ -7,6 +7,7 @@ use super::robot::TestRunDB;
 pub struct ProjectOverview {
     pub id: i32,
     pub name: String,
+    pub create_date: NaiveDateTime,
     pub test_run_count: i32,
     pub last_test_run: Option<ProjectTestRun>,
 }

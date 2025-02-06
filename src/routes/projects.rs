@@ -23,11 +23,11 @@ impl ProjectsHandler {
     fn routes(&self) -> Scope {
         web::scope("/api/projects")
             .app_data(web::Data::new(self.projects_service.clone()))
-            .route("", web::get().to(Self::get_all_projects))
+            .route("/overview", web::get().to(Self::get_projects_overview))
             .route("/{id}", web::get().to(Self::get_project_by_id))
     }
 
-    async fn get_all_projects(
+    async fn get_projects_overview(
         projects_service: web::Data<Arc<ProjectsService>>,
     ) -> Result<HttpResponse, Error> {
         match projects_service.get_projects_overview().await {

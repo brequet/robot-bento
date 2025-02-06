@@ -1,10 +1,12 @@
 import { API_BASE_URL } from '$lib/config';
 
-import type { ProjectOverview, Project } from '$lib/types/project';
+import type { Project, ProjectOverviewResponse } from '$lib/types/project';
 
-export async function getAllProjects(): Promise<ProjectOverview[]> {
+const PROJECTS_BASE_API = `${API_BASE_URL}/projects`
+
+export async function getAllProjects(): Promise<ProjectOverviewResponse[]> {
 	try {
-		const response = await fetch(`${API_BASE_URL}/projects`);
+		const response = await fetch(`${PROJECTS_BASE_API}/overview`);
 
 		if (!response.ok) {
 			throw new Error(`Failed to fetch projects: ${response.statusText}`);
@@ -19,7 +21,7 @@ export async function getAllProjects(): Promise<ProjectOverview[]> {
 
 export async function getProjectById(id: string): Promise<Project | null> {
 	try {
-		const response = await fetch(`${API_BASE_URL}/projects/${id}`);
+		const response = await fetch(`${PROJECTS_BASE_API}/${id}`);
 		if (!response.ok) throw new Error('Failed to fetch project details');
 		return await response.json();
 	} catch (error) {

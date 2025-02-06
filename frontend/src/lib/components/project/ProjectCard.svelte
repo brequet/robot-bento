@@ -1,14 +1,16 @@
 <script lang="ts">
-	import type { ProjectOverview } from '$lib/types/project';
-	import { Progress } from '$lib/components/ui/progress/index.js';
-	import * as Card from '$lib/components/ui/card/index.js';
 	import { goto } from '$app/navigation';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Progress } from '$lib/components/ui/progress/index.js';
+	import type { ProjectOverviewResponse } from '$lib/types/project';
 
-	export let project: ProjectOverview;
+	export let project: ProjectOverviewResponse;
 
 	let pass_rate =
-		(project.last_test_run?.total_tests ?? 0) > 0
-			? Math.round((project.last_test_run!.passed_tests / project.last_test_run!.total_tests) * 100)
+		(project.lastTestRunSummary?.totalTests ?? 0) > 0
+			? Math.round(
+					(project.lastTestRunSummary!.passedTests / project.lastTestRunSummary!.totalTests) * 100
+				)
 			: 0;
 
 	function navigateToProject() {
@@ -26,14 +28,14 @@
 
 	<Card.Content class="space-y-3">
 		<div class="text-sm text-gray-500">
-			<span class="font-medium">{project.test_run_count}</span> runs saved
+			<span class="font-medium">{project.testRunCount}</span> runs saved
 		</div>
 
 		<div class="space-y-1 text-sm text-gray-500">
 			Last Run:
-			{#if project.last_test_run}
+			{#if project.lastTestRunSummary}
 				<span class="font-medium"
-					>{new Date(project.last_test_run.last_test_run_date).toLocaleDateString()}</span
+					>{new Date(project.lastTestRunSummary.lastTestRunDate).toLocaleDateString()}</span
 				>
 				<div>
 					<div class="flex justify-between text-xs text-gray-600">

@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getAllProjects } from '$lib/services/projects';
-	import type { ProjectOverview } from '$lib/types/project';
+	import type { ProjectOverviewResponse } from '$lib/types/project';
 	import ProjectList from '$lib/components/project/ProjectList.svelte';
 
-	let projects: ProjectOverview[] = [];
+	let projects: ProjectOverviewResponse[] = [];
 	let error: string | null = null;
 
 	onMount(async () => {
