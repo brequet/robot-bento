@@ -2,19 +2,14 @@ use std::sync::Arc;
 
 use actix_cors::Cors;
 use actix_multipart::{form::MultipartFormConfig, MultipartError};
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{App, Error, HttpRequest, HttpServer};
 use dotenv;
-use mime_guess;
+use tracing::error;
 mod config;
 mod models;
 mod repositories;
 mod routes;
 mod services;
-use rust_embed::RustEmbed;
-
-#[derive(RustEmbed)]
-#[folder = "frontend/build/"]
-struct Assets;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -62,32 +57,14 @@ async fn main() -> std::io::Result<()> {
             .configure(|cfg| {
                 routes::projects::ProjectsHandler::init(cfg, Arc::clone(&projects_service))
             })
-            .service(web::scope("").default_service(web::to(serve_frontend)))
+            .configure(|cfg| routes::frontend::FrontendHandler::init(cfg))
     })
     .bind(addr)?
     .run()
     .await
 }
 
-async fn serve_frontend(req: HttpRequest) -> impl Responder {
-    let path = if req.path() == "/" {
-        "index.html"
-    } else {
-        &req.path()[1..]
-    };
-
-    match Assets::get(path) {
-        Some(content) => {
-            let mime = mime_guess::from_path(path).first_or_octet_stream();
-            HttpResponse::Ok()
-                .content_type(mime.as_ref())
-                .body(content.data.into_owned())
-        }
-        None => HttpResponse::NotFound().body("404 Not Found"),
-    }
-}
-
 fn handle_multipart_error(err: MultipartError, _req: &HttpRequest) -> Error {
-    print!("Multipart error: {}", err);
+    error!("Multipart error: {}", err);
     return Error::from(err);
 }
