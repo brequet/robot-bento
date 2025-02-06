@@ -365,7 +365,15 @@ pub enum ParserError {
 pub struct RobotOutputParserService;
 
 impl RobotOutputParserService {
-    pub fn from_file<P: AsRef<Path>>(file_name: String, path: P) -> Result<TestRun, ParserError> {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn from_file<P: AsRef<Path>>(
+        &self,
+        file_name: String,
+        path: P,
+    ) -> Result<TestRun, ParserError> {
         info!("Parsing file: {:?}", path.as_ref());
 
         let extension = file_name.split('.').last().unwrap_or("no extension");
@@ -375,7 +383,7 @@ impl RobotOutputParserService {
 
         let content = fs::read_to_string(path)?;
 
-        let mut test_run = Self::from_content(&content)?;
+        let mut test_run = self.from_content(&content)?;
 
         let mut hasher = sha1::Sha1::new();
         hasher.update(&content);
@@ -385,7 +393,7 @@ impl RobotOutputParserService {
         Ok(test_run)
     }
 
-    pub fn from_content(content: &str) -> Result<TestRun, ParserError> {
+    pub fn from_content(&self, content: &str) -> Result<TestRun, ParserError> {
         quick_xml::de::from_str(content).map_err(ParserError::from)
     }
 }

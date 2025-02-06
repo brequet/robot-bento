@@ -1,55 +1,19 @@
+use std::sync::Arc;
+
 use actix_multipart::form::{json::Json as MpJson, tempfile::TempFile, MultipartForm};
-use actix_web::{get, post, web, Error, HttpResponse};
+use actix_web::{web, Error, HttpResponse, Scope};
 use serde::Deserialize;
 use serde_json::json;
-use sqlx::PgPool;
 use tracing::{error, info};
 
 use crate::services::{
     self,
     parser::{ParserError, RobotOutputParserService},
+    projects::ProjectsService,
     robot::RobotService,
 };
 
-pub fn init(cfg: &mut web::ServiceConfig, pool: web::Data<PgPool>) {
-    cfg.app_data(pool).service(
-        web::scope("/api/robot")
-            .service(get_all_test_runs)
-            .service(get_test_run)
-            .service(upload_robot_output),
-    );
-}
-
-#[get("/test-runs")]
-async fn get_all_test_runs(pool: web::Data<PgPool>) -> Result<HttpResponse, Error> {
-    let test_runs = RobotService::get_all_test_runs(&pool).await;
-
-    match test_runs {
-        Ok(test_runs) => Ok(HttpResponse::Ok().json(test_runs)),
-        Err(e) => {
-            error!("Error getting test runs: {:?}", e);
-            Ok(HttpResponse::InternalServerError().finish())
-        }
-    }
-}
-
-#[get("/test-runs/{id}")]
-async fn get_test_run(
-    pool: web::Data<PgPool>,
-    path: web::Path<i32>,
-) -> Result<HttpResponse, Error> {
-    let test_run = RobotService::get_test_run_by_id(&pool, path.into_inner()).await;
-
-    match test_run {
-        Ok(Some(test_run)) => Ok(HttpResponse::Ok().json(test_run)),
-        Ok(None) => Ok(HttpResponse::NotFound().finish()),
-        Err(e) => {
-            error!("Error getting test run: {:?}", e);
-            Ok(HttpResponse::InternalServerError().finish())
-        }
-    }
-}
-
+// TODO: move to api model layer
 /*
 Metadata ideas:
 - test env (staging, prod, etc)
@@ -73,48 +37,133 @@ pub struct RobotOuputUploadForm {
     pub metadata: MpJson<RobotTestRunMetadata>,
 }
 
-#[post("/upload")]
-async fn upload_robot_output(
-    MultipartForm(form): MultipartForm<RobotOuputUploadForm>,
-    pool: web::Data<PgPool>,
-) -> Result<HttpResponse, Error> {
-    let file_name = form.file.file_name.unwrap_or_default();
-    info!(
-        "Processing upload: {} [{} - {}]",
-        file_name, form.metadata.app_name, form.metadata.app_version
-    );
+pub struct RobotHandler {
+    robot_service: Arc<RobotService>,
+    projects_service: Arc<ProjectsService>,
+    robot_output_parser_service: Arc<RobotOutputParserService>,
+}
 
-    let file_path = form.file.file.path();
+impl RobotHandler {
+    fn new(
+        robot_service: Arc<RobotService>,
+        projects_service: Arc<ProjectsService>,
+        robot_output_parser_service: Arc<RobotOutputParserService>,
+    ) -> Self {
+        RobotHandler {
+            robot_service,
+            projects_service,
+            robot_output_parser_service,
+        }
+    }
 
-    match RobotOutputParserService::from_file(file_name, file_path) {
-        Ok(test_run) => {
-            let metadata = services::robot::TestRunMetadata {
-                app_name: form.metadata.app_name.clone(),
-                app_version: form.metadata.app_version.clone(),
-            };
+    pub fn init(
+        cfg: &mut web::ServiceConfig,
+        robot_service: Arc<RobotService>,
+        projects_service: Arc<ProjectsService>,
+        robot_output_parser_service: Arc<RobotOutputParserService>,
+    ) {
+        let handler =
+            RobotHandler::new(robot_service, projects_service, robot_output_parser_service);
+        cfg.service(handler.routes());
+    }
 
-            match RobotService::save_test_run(&pool, test_run, metadata).await {
-                Ok(_) => Ok(HttpResponse::Ok().finish()),
-                Err(e) => {
-                    let error_message = format!("Failed to save test run: {}", e);
-                    error!("{}", error_message);
-                    Ok(HttpResponse::InternalServerError().json(json!({
-                        "error": error_message
-                    })))
-                }
+    fn routes(&self) -> Scope {
+        web::scope("/api/robot")
+            .app_data(web::Data::new(self.robot_service.clone()))
+            .app_data(web::Data::new(self.projects_service.clone()))
+            .app_data(web::Data::new(self.robot_output_parser_service.clone()))
+            .route("/test-runs", web::get().to(Self::get_all_test_runs))
+            .route("/test-runs/{id}", web::get().to(Self::get_test_run))
+            .route("/upload", web::post().to(Self::upload_robot_output))
+    }
+
+    async fn get_all_test_runs(
+        robot_service: web::Data<Arc<RobotService>>,
+    ) -> Result<HttpResponse, Error> {
+        let test_runs = robot_service.get_all_test_runs().await;
+
+        match test_runs {
+            Ok(test_runs) => Ok(HttpResponse::Ok().json(test_runs)),
+            Err(e) => {
+                error!("Error getting test runs: {:?}", e);
+                Ok(HttpResponse::InternalServerError().finish())
             }
         }
-        Err(ParserError::InvalidFileExtension(message)) => {
-            error!("Invalid file extension: {}", message);
-            Ok(HttpResponse::BadRequest().json(json!({
-                "error": "Invalid file extension, expected XML"
-            })))
+    }
+
+    async fn get_test_run(
+        robot_service: web::Data<Arc<RobotService>>,
+        path: web::Path<i32>,
+    ) -> Result<HttpResponse, Error> {
+        let test_run = robot_service.get_test_run_by_id(path.into_inner()).await;
+
+        match test_run {
+            Ok(Some(test_run)) => Ok(HttpResponse::Ok().json(test_run)),
+            Ok(None) => Ok(HttpResponse::NotFound().finish()),
+            Err(e) => {
+                error!("Error getting test run: {:?}", e);
+                Ok(HttpResponse::InternalServerError().finish())
+            }
         }
-        Err(e) => {
-            error!("Failed to process XML: {}", e);
-            Ok(HttpResponse::InternalServerError().json(json!({
-                "error": "Failed to process XML file"
-            })))
+    }
+
+    async fn upload_robot_output(
+        MultipartForm(form): MultipartForm<RobotOuputUploadForm>,
+        robot_service: web::Data<Arc<RobotService>>,
+        projects_service: web::Data<Arc<ProjectsService>>,
+        robot_output_parser_service: web::Data<Arc<RobotOutputParserService>>,
+    ) -> Result<HttpResponse, Error> {
+        let file_name = form.file.file_name.unwrap_or_default();
+        info!(
+            "Processing upload: {} [{} - {}]",
+            file_name, form.metadata.app_name, form.metadata.app_version
+        );
+        if form.metadata.app_name.is_empty() {
+            error!("Missing appName");
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "error": "Missing appName"
+            })));
+        }
+
+        let file_path = form.file.file.path();
+
+        match robot_output_parser_service.from_file(file_name, file_path) {
+            Ok(test_run) => {
+                let metadata = services::robot::TestRunMetadata {
+                    app_name: form.metadata.app_name.clone(),
+                    app_version: form.metadata.app_version.clone(),
+                };
+
+                let project_id = projects_service
+                    .get_or_create_project_by_name(form.metadata.app_name.as_str())
+                    .await?;
+
+                match robot_service
+                    .save_test_run(test_run, metadata, project_id)
+                    .await
+                {
+                    Ok(_) => Ok(HttpResponse::Ok().finish()),
+                    Err(e) => {
+                        let error_message = format!("Failed to save test run: {}", e);
+                        error!("{}", error_message);
+                        Ok(HttpResponse::InternalServerError().json(json!({
+                            "error": error_message
+                        })))
+                    }
+                }
+            }
+            Err(ParserError::InvalidFileExtension(message)) => {
+                error!("Invalid file extension: {}", message);
+                Ok(HttpResponse::BadRequest().json(json!({
+                    "error": "Invalid file extension, expected XML"
+                })))
+            }
+            Err(e) => {
+                error!("Failed to process XML: {}", e);
+                Ok(HttpResponse::InternalServerError().json(json!({
+                    "error": "Failed to process XML file"
+                })))
+            }
         }
     }
 }

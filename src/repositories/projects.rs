@@ -8,10 +8,16 @@ pub struct ProjectDB {
     pub create_date: Option<NaiveDateTime>,
 }
 
-pub struct ProjectsRepository;
+pub struct ProjectsRepository {
+    pool: PgPool,
+}
 
 impl ProjectsRepository {
-    pub async fn get_projects(pool: &PgPool) -> Result<Vec<ProjectDB>, sqlx::Error> {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn get_projects(&self) -> Result<Vec<ProjectDB>, sqlx::Error> {
         let projects: Vec<ProjectDB> = sqlx::query_as!(
             ProjectDB,
             r#"
@@ -19,7 +25,7 @@ impl ProjectsRepository {
             FROM projects
             "#,
         )
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_projects failed: {:?}", e))?;
 
@@ -27,7 +33,7 @@ impl ProjectsRepository {
     }
 
     pub async fn get_project_by_id(
-        pool: &PgPool,
+        &self,
         project_id: i32,
     ) -> Result<Option<ProjectDB>, sqlx::Error> {
         let projects = sqlx::query_as!(
@@ -39,7 +45,7 @@ impl ProjectsRepository {
             "#,
             project_id
         )
-        .fetch_optional(pool)
+        .fetch_optional(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_project_by_id failed: {:?}", e))?;
 
@@ -47,7 +53,7 @@ impl ProjectsRepository {
     }
 
     pub async fn get_project_id_by_name(
-        pool: &PgPool,
+        &self,
         project_name: &str,
     ) -> Result<Option<i32>, sqlx::Error> {
         let project_id: Option<i32> = sqlx::query_scalar!(
@@ -58,14 +64,14 @@ impl ProjectsRepository {
             "#,
             project_name
         )
-        .fetch_optional(pool)
+        .fetch_optional(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_project_id_by_name failed: {:?}", e))?;
 
         Ok(project_id)
     }
 
-    pub async fn insert_project(pool: &PgPool, project: ProjectDB) -> Result<i32, sqlx::Error> {
+    pub async fn insert_project(&self, project: ProjectDB) -> Result<i32, sqlx::Error> {
         let project_id: i32 = sqlx::query_scalar!(
             r#"
             INSERT INTO projects (name)
@@ -74,7 +80,7 @@ impl ProjectsRepository {
             "#,
             project.name
         )
-        .fetch_one(pool)
+        .fetch_one(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query insert_project failed: {:?}", e))?;
 

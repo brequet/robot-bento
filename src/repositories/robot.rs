@@ -66,35 +66,40 @@ impl SuiteKeywordType {
     }
 }
 
-pub struct RobotRepository;
+pub struct RobotRepository {
+    pool: PgPool,
+}
 
 impl RobotRepository {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
 
-    pub async fn get_test_run_data_by_project_ids(pool: &PgPool, project_ids: &Vec<i32>) -> Result<Vec<TestRunOverviewDB>, sqlx::Error> {
+    pub async fn get_test_run_data_by_project_ids(&self, project_ids: &Vec<i32>) -> Result<Vec<TestRunOverviewDB>, sqlx::Error> {
         query_file_as!(
             TestRunOverviewDB,
             "./src/repositories/sql/robot/get_test_run_data_by_project_ids.sql",
             project_ids
         )
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_test_run_data_by_project_ids failed: {:?}", e))
     }
 
-    pub async fn get_all_test_runs(pool: &PgPool) -> Result<Vec<TestRunDB>, sqlx::Error> {
+    pub async fn get_all_test_runs(&self) -> Result<Vec<TestRunDB>, sqlx::Error> {
         let test_runs = query_file_as!(
             TestRunDBPartial,
             "./src/repositories/sql/robot/get_all_test_runs.sql",
         )
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_all_test_runs failed: {:?}", e))?;
 
         let mut test_run_dbs = Vec::new();
         for test_run in test_runs {
-            let suites = RobotRepository::get_suites_by_test_run_id_and_parent_suite_id(pool, test_run.id.unwrap(), None).await?;
-            let statistics = RobotRepository::get_test_run_statistics_by_test_run_id(pool, test_run.id.unwrap()).await?;
-            let errors = RobotRepository::get_test_run_errors_by_test_run_id(pool, test_run.id.unwrap()).await?;
+            let suites = self.get_suites_by_test_run_id_and_parent_suite_id( test_run.id.unwrap(), None).await?;
+            let statistics = self.get_test_run_statistics_by_test_run_id( test_run.id.unwrap()).await?;
+            let errors = self.get_test_run_errors_by_test_run_id( test_run.id.unwrap()).await?;
     
             test_run_dbs.push({TestRunDB {
                 id: test_run.id,
@@ -115,21 +120,21 @@ impl RobotRepository {
         Ok(test_run_dbs)
     }
 
-    pub async fn get_all_test_runs_by_project_id(pool: &PgPool, project_id: i32) -> Result<Vec<TestRunDB>, sqlx::Error> {
+    pub async fn get_all_test_runs_by_project_id(&self, project_id: i32) -> Result<Vec<TestRunDB>, sqlx::Error> {
         let test_runs = query_file_as!(
             TestRunDBPartial,
             "./src/repositories/sql/robot/get_all_test_runs_by_project_id.sql",
             project_id
         )
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_all_test_runs_by_project_id failed: {:?}", e))?;
 
         let mut test_run_dbs = Vec::new();
         for test_run in test_runs {
-            let suites = RobotRepository::get_suites_by_test_run_id_and_parent_suite_id(pool, test_run.id.unwrap(), None).await?;
-            let statistics = RobotRepository::get_test_run_statistics_by_test_run_id(pool, test_run.id.unwrap()).await?;
-            let errors = RobotRepository::get_test_run_errors_by_test_run_id(pool, test_run.id.unwrap()).await?;
+            let suites = self.get_suites_by_test_run_id_and_parent_suite_id( test_run.id.unwrap(), None).await?;
+            let statistics = self.get_test_run_statistics_by_test_run_id( test_run.id.unwrap()).await?;
+            let errors = self.get_test_run_errors_by_test_run_id( test_run.id.unwrap()).await?;
     
             test_run_dbs.push({TestRunDB {
                 id: test_run.id,
@@ -151,7 +156,7 @@ impl RobotRepository {
     }
     
     pub async fn get_test_run_by_id(
-        pool: &PgPool,
+        &self,
         id: i32,
     ) -> Result<Option<TestRunDB>, sqlx::Error> {
         let test_run = match query_file_as!(
@@ -159,7 +164,7 @@ impl RobotRepository {
             "./src/repositories/sql/robot/get_test_run_by_id.sql",
             id
         )
-        .fetch_optional(pool)
+        .fetch_optional(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_test_run_by_id failed: {:?}", e))?
         {
@@ -167,9 +172,9 @@ impl RobotRepository {
             None => return Ok(None),
         };
 
-        let suites = RobotRepository::get_suites_by_test_run_id_and_parent_suite_id(pool, id, None).await?;
-        let statistics = RobotRepository::get_test_run_statistics_by_test_run_id(pool, id).await?;
-        let errors = RobotRepository::get_test_run_errors_by_test_run_id(pool, id).await?;
+        let suites = self.get_suites_by_test_run_id_and_parent_suite_id( id, None).await?;
+        let statistics = self.get_test_run_statistics_by_test_run_id( id).await?;
+        let errors = self.get_test_run_errors_by_test_run_id( id).await?;
 
         Ok(Some(TestRunDB {
             id: test_run.id,
@@ -187,19 +192,19 @@ impl RobotRepository {
         }))
     }
 
-    pub async fn is_sha1_already_inserted(pool: &PgPool, sha1: &str) -> Result<bool, sqlx::Error> {
+    pub async fn is_sha1_already_inserted(&self, sha1: &str) -> Result<bool, sqlx::Error> {
         let is_inserted: Option<bool> = query_scalar!(
             "SELECT EXISTS(SELECT 1 FROM test_runs WHERE sha1 = $1)",
             sha1
         )
-        .fetch_one(pool)
+        .fetch_one(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query is_sha1_already_inserted failed: {:?}", e))?;
 
         Ok(is_inserted.unwrap_or(true))
     }
 
-    pub async fn insert_test_run(pool: &PgPool, test_run: &TestRunDB, project_id: i32) -> Result<i32, sqlx::Error> {
+    pub async fn insert_test_run(&self, test_run: &TestRunDB, project_id: i32) -> Result<i32, sqlx::Error> {
         let result = query_file!(
             "./src/repositories/sql/robot/insert_test_run.sql",
             project_id,
@@ -211,21 +216,21 @@ impl RobotRepository {
             test_run.app_version,
             test_run.sha1
         )
-        .fetch_one(pool)
+        .fetch_one(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query insert_test_run failed: {:?}", e))?;
 
         let test_run_id = result.id;
 
-        RobotRepository::insert_suites(pool, test_run_id, None, &test_run.suites).await?;
-        RobotRepository::insert_statistics(pool, test_run_id, &test_run.statistics).await?;
-        RobotRepository::insert_errors(pool, test_run_id, &test_run.errors).await?;
+        self.insert_suites( test_run_id, None, &test_run.suites).await?;
+        self.insert_statistics( test_run_id, &test_run.statistics).await?;
+        self.insert_errors( test_run_id, &test_run.errors).await?;
 
         Ok(test_run_id)
     }
 
     async fn get_suites_by_test_run_id_and_parent_suite_id(
-        pool: &sqlx::Pool<sqlx::Postgres>,
+        &self,
         test_run_id: i32,
         parent_suite_id: Option<i32>,
     ) -> Result<Vec<SuiteDB>, sqlx::Error> {
@@ -258,15 +263,15 @@ impl RobotRepository {
         
         let suites: Vec<SuiteDBPartial> = query_builder
         .build_query_as()
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_suites_by_test_run_id_and_parent_suite_id failed: {:?}", e))?;
 
         let mut suite_dbs = Vec::new();
         for suite in suites {
-            let (setup_keyword, teardown_keyword) = RobotRepository::get_suite_keywords_by_suite_id(pool, suite.id.unwrap()).await?;
-            let suites = RobotRepository::get_suites_by_test_run_id_and_parent_suite_id(pool, test_run_id, suite.id).await?;
-            let tests = RobotRepository::get_tests_by_suite_id(pool, suite.id.unwrap()).await?;
+            let (setup_keyword, teardown_keyword) = self.get_suite_keywords_by_suite_id( suite.id.unwrap()).await?;
+            let suites = self.get_suites_by_test_run_id_and_parent_suite_id( test_run_id, suite.id).await?;
+            let tests = self.get_tests_by_suite_id( suite.id.unwrap()).await?;
             suite_dbs.push(SuiteDB {
                 id: suite.id,
                 name: suite.name.clone(),
@@ -287,14 +292,14 @@ impl RobotRepository {
     }
 
     async fn get_suite_keywords_by_suite_id(
-        pool: &sqlx::Pool<sqlx::Postgres>,
+        &self,
         suite_id: i32
     ) -> Result<(Option<parser::Keyword>, Option<parser::Keyword>), sqlx::Error> {
         let keywords = sqlx::query!(
             "SELECT type as keyword_type, value as keyword_value FROM suite_keywords WHERE suite_id = $1",
             suite_id
         )
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_suite_keywords_by_suite_id failed: {:?}", e))?;
 
@@ -311,7 +316,7 @@ impl RobotRepository {
     }
 
     async fn get_tests_by_suite_id(
-        pool: &sqlx::Pool<sqlx::Postgres>,
+        &self,
         suite_id: i32,
     ) -> Result<Vec<TestDB>, sqlx::Error> {
         let tests = query_file_as!(
@@ -319,13 +324,13 @@ impl RobotRepository {
             "./src/repositories/sql/robot/get_tests_by_suite_id.sql",
             suite_id
         )
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_tests_by_suite_id failed: {:?}", e))?;
 
         let mut tests_dbs = Vec::new();
         for test in tests {
-            let tags = RobotRepository::get_tags_by_test_id(pool, test.id.unwrap()).await?;
+            let tags = self.get_tags_by_test_id( test.id.unwrap()).await?;
             tests_dbs.push(TestDB {
                 id: test.id,
                 name: test.name.clone(),
@@ -345,14 +350,14 @@ impl RobotRepository {
     }
 
     async fn get_tags_by_test_id(
-        pool: &sqlx::Pool<sqlx::Postgres>,
+        &self,
         test_id: i32,
     ) -> Result<Vec<String>, sqlx::Error> {
         let tags = query_scalar!(
             "SELECT value FROM test_tags WHERE test_id = $1",
             test_id
         )
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_tags_by_test_id failed: {:?}", e))?;
 
@@ -360,7 +365,7 @@ impl RobotRepository {
     }
 
     async fn get_test_run_statistics_by_test_run_id(
-        pool: &sqlx::Pool<sqlx::Postgres>,
+        &self,
         test_run_id: i32,
     ) -> Result<Vec<StatDB>, sqlx::Error> {
         let statistics = query_file_as!(
@@ -368,7 +373,7 @@ impl RobotRepository {
             "./src/repositories/sql/robot/get_test_run_statistics_by_test_run_id.sql",
             test_run_id
         )
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| {
             tracing::error!(
@@ -380,7 +385,7 @@ impl RobotRepository {
     }
 
     async fn get_test_run_errors_by_test_run_id(
-        pool: &sqlx::Pool<sqlx::Postgres>,
+        &self,
         test_run_id: i32,
     ) -> Result<Vec<ErrorDB>, sqlx::Error> {
         let errors = query_file_as!(
@@ -388,7 +393,7 @@ impl RobotRepository {
             "./src/repositories/sql/robot/get_test_run_errors_by_test_run_id.sql",
             test_run_id
         )
-        .fetch_all(pool)
+        .fetch_all(&self.pool)
         .await
         .inspect_err(|e| {
             tracing::error!("Query get_test_run_errors_by_test_run_id failed: {:?}", e)
@@ -397,7 +402,7 @@ impl RobotRepository {
     }
 
     async fn insert_suites(
-        pool: &PgPool,
+        &self,
         test_run_id: i32,
         parent_suite_id: Option<i32>,
         suites: &Vec<SuiteDB>,
@@ -425,21 +430,21 @@ impl RobotRepository {
 
             query_builder.push(" RETURNING id");
 
-            let ids: Vec<(i32,)> = query_builder.build_query_as().fetch_all(pool).await
+            let ids: Vec<(i32,)> = query_builder.build_query_as().fetch_all(&self.pool).await
             .inspect_err(|e| tracing::error!("Query insert_suites failed: {:?}", e))?;
 
             for (suite, (id,)) in suites.iter().zip(ids) {
                 if !suite.suites.is_empty() {
-                    RobotRepository::insert_suites(pool, test_run_id, Some(id), &suite.suites).await?;
+                    self.insert_suites(test_run_id, Some(id), &suite.suites).await?;
                 }
                 if !suite.tests.is_empty() {
-                    RobotRepository::insert_tests(pool, id, &suite.tests).await?;
+                    self.insert_tests(id, &suite.tests).await?;
                 }
                 if let Some(setup_kw) = &suite.setup_keyword {
-                    RobotRepository::insert_suite_keyword(pool, id, SuiteKeywordType::Setup, setup_kw.clone()).await?;
+                    self.insert_suite_keyword(id, SuiteKeywordType::Setup, setup_kw.clone()).await?;
                 }
                 if let Some(teardown_kw) = &suite.teardown_keyword {
-                    RobotRepository::insert_suite_keyword(pool, id, SuiteKeywordType::Teardown, teardown_kw.clone()).await?;
+                    self.insert_suite_keyword(id, SuiteKeywordType::Teardown, teardown_kw.clone()).await?;
                 }
             }
 
@@ -448,7 +453,7 @@ impl RobotRepository {
     }
 
     async fn insert_suite_keyword(
-        pool: &PgPool,
+        &self,
         suite_id: i32,
         keyword_type: SuiteKeywordType,
         keyword: parser::Keyword,
@@ -467,7 +472,7 @@ impl RobotRepository {
             keyword_type.as_str(),
             json_keyword
         )
-        .execute(pool)
+        .execute(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query insert_suite_keyword failed: {:?}", e))?;
 
@@ -475,7 +480,7 @@ impl RobotRepository {
     }
 
     async fn insert_tests(
-        pool: &PgPool,
+        &self,
         suite_id: i32,
         tests: &Vec<TestDB>,
     ) -> Result<(), sqlx::Error> {
@@ -501,15 +506,15 @@ impl RobotRepository {
 
         query_builder.push(" RETURNING id");
 
-        let ids: Vec<(i32,)> = query_builder.build_query_as().fetch_all(pool).await
+        let ids: Vec<(i32,)> = query_builder.build_query_as().fetch_all(&self.pool).await
         .inspect_err(|e| tracing::error!("Query insert_tests failed: {:?}", e))?;
 
         for (test, (id,)) in tests.iter().zip(ids) {
             if !test.tags.is_empty() {
-                RobotRepository::insert_test_tags(pool, id, &test.tags).await?
+                self.insert_test_tags(id, &test.tags).await?
             }
             if !test.keywords.is_empty() {
-                RobotRepository::insert_test_keywords(pool, id, &test.keywords).await?
+                self.insert_test_keywords(id, &test.keywords).await?
             }
         }
 
@@ -517,7 +522,7 @@ impl RobotRepository {
     }
     
     async fn insert_test_tags(
-        pool: &PgPool,
+        &self,
         test_id: i32,
         tags: &Vec<String>,
     ) -> Result<(), sqlx::Error> {
@@ -536,14 +541,14 @@ impl RobotRepository {
 
         query_builder
             .build()
-            .execute(pool)
+            .execute(&self.pool)
             .await
             .inspect_err(|e| tracing::error!("Query insert_test_tags failed: {:?}", e))?;
         Ok(())
     }
 
     async fn insert_test_keywords(
-        pool: &PgPool,
+        &self,
         test_id: i32,
         keywords: &Vec<parser::BaseBody>,
     ) -> Result<(), sqlx::Error> {
@@ -560,7 +565,7 @@ impl RobotRepository {
             test_id,
             json_keywords
         )
-        .execute(pool)
+        .execute(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query insert_test_keywords failed: {:?}", e))?;
 
@@ -568,7 +573,7 @@ impl RobotRepository {
     }
 
     async fn insert_statistics(
-        pool: &PgPool,
+        &self,
         test_run_id: i32,
         statistics: &Vec<StatDB>,
     ) -> Result<(), sqlx::Error> {
@@ -593,14 +598,14 @@ impl RobotRepository {
 
         query_builder
             .build()
-            .execute(pool)
+            .execute(&self.pool)
             .await
             .inspect_err(|e| tracing::error!("Query insert_statistics failed: {:?}", e))?;
         Ok(())
     }
 
     async fn insert_errors(
-        pool: &PgPool,
+        &self,
         test_run_id: i32,
         errors: &Vec<ErrorDB>,
     ) -> Result<(), sqlx::Error> {
@@ -621,7 +626,7 @@ impl RobotRepository {
 
         query_builder
             .build()
-            .execute(pool)
+            .execute(&self.pool)
             .await
             .inspect_err(|e| tracing::error!("Query insert_errors failed: {:?}", e))?;
         Ok(())

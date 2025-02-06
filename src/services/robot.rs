@@ -1,11 +1,7 @@
 use chrono::NaiveDateTime;
-use sqlx::PgPool;
 use tracing::{info, warn};
 
-use crate::{
-    models::robot::TestRunDB, repositories::robot::RobotRepository,
-    services::projects::ProjectsService,
-};
+use crate::{models::robot::TestRunDB, repositories::robot::RobotRepository};
 
 use super::{mappers, parser::TestRun};
 
@@ -27,50 +23,49 @@ pub struct ProjectTestRunData {
     // pub last_elapsed_time: i32,
 }
 
-pub struct RobotService;
+pub struct RobotService {
+    repository: RobotRepository,
+}
 
 impl RobotService {
+    pub fn new(repository: RobotRepository) -> Self {
+        Self { repository }
+    }
+
     pub async fn save_test_run(
-        pool: &PgPool,
+        &self,
         parsed_test_run: TestRun,
         metadata: TestRunMetadata,
+        project_id: i32,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let file_sha1 = parsed_test_run.sha1.as_ref();
-        if RobotRepository::is_sha1_already_inserted(pool, file_sha1).await? {
+        if self.repository.is_sha1_already_inserted(file_sha1).await? {
             warn!("Test run with sha1 {} already exists", &file_sha1);
             Err("Test run already imported")?;
         }
 
-        let test_run = mappers::robot::map_test_run(&parsed_test_run, &metadata);
+        let test_run = mappers::robot::map_test_run(&parsed_test_run, &metadata)?;
 
         info!("Saving test run with sha1 {}", file_sha1);
-        match test_run {
-            Ok(test_run) => {
-                let project_id =
-                    ProjectsService::upsert_project_by_name(pool, test_run.app_name.as_str())
-                        .await?;
-
-                match RobotRepository::insert_test_run(pool, &test_run, project_id).await {
-                    Ok(test_run_id) => {
-                        info!("Saved test run, id: {}", test_run_id);
-                    }
-                    Err(e) => return Err(Box::new(e)),
-                }
-            }
-            Err(e) => return Err(Box::new(e)),
-        };
+        let test_run_id = self
+            .repository
+            .insert_test_run(&test_run, project_id)
+            .await?;
+        info!("Saved test run, id: {}", test_run_id);
         Ok(())
     }
 
     pub async fn get_test_run_data_by_project_ids(
-        pool: &PgPool,
+        &self,
         project_ids: &Vec<i32>,
     ) -> Result<Vec<ProjectTestRunData>, Box<dyn std::error::Error>> {
         if project_ids.is_empty() {
             return Ok(vec![]);
         }
 
-        let test_runs_data = RobotRepository::get_test_run_data_by_project_ids(pool, project_ids)
+        let test_runs_data = self
+            .repository
+            .get_test_run_data_by_project_ids(project_ids)
             .await?
             .iter()
             .map(|test_run_data| {
@@ -96,26 +91,27 @@ impl RobotService {
         Ok(test_runs_data)
     }
 
-    pub async fn get_all_test_runs(
-        pool: &PgPool,
-    ) -> Result<Vec<TestRunDB>, Box<dyn std::error::Error>> {
-        let test_runs = RobotRepository::get_all_test_runs(pool).await?;
+    pub async fn get_all_test_runs(&self) -> Result<Vec<TestRunDB>, Box<dyn std::error::Error>> {
+        let test_runs = self.repository.get_all_test_runs().await?;
         Ok(test_runs)
     }
 
     pub async fn get_all_test_runs_by_project_id(
-        pool: &PgPool,
+        &self,
         project_id: i32,
     ) -> Result<Vec<TestRunDB>, Box<dyn std::error::Error>> {
-        let test_runs = RobotRepository::get_all_test_runs_by_project_id(pool, project_id).await?;
+        let test_runs = self
+            .repository
+            .get_all_test_runs_by_project_id(project_id)
+            .await?;
         Ok(test_runs)
     }
 
     pub async fn get_test_run_by_id(
-        pool: &PgPool,
+        &self,
         id: i32,
     ) -> Result<Option<TestRunDB>, Box<dyn std::error::Error>> {
-        let test_run = RobotRepository::get_test_run_by_id(pool, id).await?;
+        let test_run = self.repository.get_test_run_by_id(id).await?;
         Ok(test_run)
     }
 }

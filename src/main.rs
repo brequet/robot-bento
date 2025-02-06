@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use actix_cors::Cors;
 use actix_multipart::{form::MultipartFormConfig, MultipartError};
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer, Responder};
@@ -22,6 +24,16 @@ async fn main() -> std::io::Result<()> {
 
     let pool = config::database::setup_database().await;
 
+    let robot_repository = repositories::robot::RobotRepository::new(pool.clone());
+    let projects_repository = repositories::projects::ProjectsRepository::new(pool);
+
+    let robot_output_parser_service = Arc::new(services::parser::RobotOutputParserService::new());
+    let robot_service = Arc::new(services::robot::RobotService::new(robot_repository));
+    let projects_service = Arc::new(services::projects::ProjectsService::new(
+        projects_repository,
+        Arc::clone(&robot_service),
+    ));
+
     let server_config = config::server::load();
     let addr = format!("127.0.0.1:{}", server_config.port);
 
@@ -39,8 +51,17 @@ async fn main() -> std::io::Result<()> {
                     .memory_limit(10 * 1024 * 1024) // 10 MB
                     .error_handler(handle_multipart_error),
             )
-            .configure(|cfg| routes::robot::init(cfg, web::Data::new(pool.clone())))
-            .configure(|cfg| routes::projects::init(cfg, web::Data::new(pool.clone())))
+            .configure(|cfg| {
+                routes::robot::RobotHandler::init(
+                    cfg,
+                    Arc::clone(&robot_service),
+                    Arc::clone(&projects_service),
+                    Arc::clone(&robot_output_parser_service),
+                )
+            })
+            .configure(|cfg| {
+                routes::projects::ProjectsHandler::init(cfg, Arc::clone(&projects_service))
+            })
             .service(web::scope("").default_service(web::to(serve_frontend)))
     })
     .bind(addr)?

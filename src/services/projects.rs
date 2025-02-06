@@ -1,6 +1,5 @@
-use std::f32::consts::E;
+use std::sync::Arc;
 
-use sqlx::PgPool;
 use tracing::info;
 
 use crate::{
@@ -10,17 +9,29 @@ use crate::{
 
 use super::robot::RobotService;
 
-pub struct ProjectsService;
+pub struct ProjectsService {
+    repository: ProjectsRepository,
+    robot_service: Arc<RobotService>,
+}
 
 impl ProjectsService {
+    pub fn new(repository: ProjectsRepository, robot_service: Arc<RobotService>) -> Self {
+        Self {
+            repository,
+            robot_service,
+        }
+    }
+
     pub async fn get_projects_overview(
-        pool: &PgPool,
+        &self,
     ) -> Result<Vec<ProjectOverview>, Box<dyn std::error::Error>> {
-        let projects = ProjectsRepository::get_projects(pool).await?;
+        let projects = self.repository.get_projects().await?;
 
         let project_ids: Vec<i32> = projects.iter().map(|p| p.id.unwrap()).collect();
-        let project_test_run_data =
-            RobotService::get_test_run_data_by_project_ids(pool, &project_ids).await?;
+        let project_test_run_data = self
+            .robot_service
+            .get_test_run_data_by_project_ids(&project_ids)
+            .await?;
 
         let project_overviews = projects
             .iter()
@@ -63,11 +74,11 @@ impl ProjectsService {
         Ok(project_overviews)
     }
 
-    pub async fn upsert_project_by_name(
-        pool: &PgPool,
+    pub async fn get_or_create_project_by_name(
+        &self,
         project_name: &str,
     ) -> Result<i32, Box<dyn std::error::Error>> {
-        let project_id = ProjectsRepository::get_project_id_by_name(pool, project_name).await?;
+        let project_id = self.repository.get_project_id_by_name(project_name).await?;
         match project_id {
             Some(id) => {
                 info!("Project {} already exists", project_name);
@@ -80,21 +91,23 @@ impl ProjectsService {
                     name: project_name.to_string(),
                     create_date: None,
                 };
-                let project_id = ProjectsRepository::insert_project(pool, project).await?;
+                let project_id = self.repository.insert_project(project).await?;
                 Ok(project_id)
             }
         }
     }
 
     pub async fn get_project_by_id(
-        pool: &PgPool,
+        &self,
         project_id: i32,
     ) -> Result<Option<Project>, Box<dyn std::error::Error>> {
-        let project_data = ProjectsRepository::get_project_by_id(pool, project_id).await?;
+        let project_data = self.repository.get_project_by_id(project_id).await?;
         match project_data {
             Some(project_data) => {
-                let test_runs =
-                    RobotService::get_all_test_runs_by_project_id(pool, project_id).await?;
+                let test_runs = self
+                    .robot_service
+                    .get_all_test_runs_by_project_id(project_id)
+                    .await?;
                 Ok(Some(Project {
                     id: project_data.id.unwrap(),
                     name: project_data.name,
