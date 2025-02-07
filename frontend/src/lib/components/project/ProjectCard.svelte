@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Progress } from '$lib/components/ui/progress/index.js';
-	import type { ProjectOverviewResponse } from '$lib/types/project';
+	import type { ProjectOverviewResponse } from '$lib/types/generated';
 
 	export let project: ProjectOverviewResponse;
 

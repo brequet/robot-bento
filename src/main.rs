@@ -1,15 +1,16 @@
-use std::sync::Arc;
-
 use actix_cors::Cors;
 use actix_multipart::{form::MultipartFormConfig, MultipartError};
 use actix_web::{App, Error, HttpRequest, HttpServer};
 use dotenv;
+use std::sync::Arc;
 use tracing::error;
+
 mod config;
 mod models;
 mod repositories;
 mod routes;
 mod services;
+mod utils;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {

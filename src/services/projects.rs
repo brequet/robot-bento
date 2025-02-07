@@ -8,6 +8,7 @@ use crate::{
         projects_legacy::{Project, ProjectOverview, ProjectTestRun},
     },
     repositories::projects::{ProjectDB, ProjectsRepository},
+    utils,
 };
 
 use super::robot::RobotService;
@@ -53,7 +54,9 @@ impl ProjectsService {
                     Some(data) => {
                         if data.last_test_run_date.is_some() {
                             Some(TestRunSummary {
-                                last_test_run_date: data.last_test_run_date.unwrap(),
+                                last_test_run_date: utils::date::format_datetime(
+                                    data.last_test_run_date.unwrap(),
+                                ),
                                 total_tests: data.last_total_tests.unwrap(),
                                 passed_tests: data.last_passed_tests.unwrap(),
                                 failed_tests: data.last_failed_tests.unwrap(),
@@ -69,7 +72,7 @@ impl ProjectsService {
                 ProjectOverviewResponse {
                     id: project.id.unwrap(),
                     name: project.name.clone(),
-                    create_date: project.create_date.unwrap(),
+                    create_date: utils::date::format_datetime(project.create_date.unwrap()),
                     test_run_count: test_run_count,
                     last_test_run_summary: project_test_run,
                 }
