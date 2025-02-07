@@ -5,7 +5,7 @@ use tracing::info;
 use crate::{
     models::{
         projects::api::{ProjectOverviewResponse, TestRunSummary},
-        projects_legacy::{Project, ProjectOverview, ProjectTestRun},
+        projects_legacy::Project,
     },
     repositories::projects::{ProjectDB, ProjectsRepository},
     utils,
