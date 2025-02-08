@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import type { ProjectOverviewResponse } from '$lib/types/generated';
 	import TestRunProgress from './TestRunProgress.svelte';
@@ -12,45 +11,42 @@
 					(project.lastTestRunSummary!.passedTests / project.lastTestRunSummary!.totalTests) * 100
 				)
 			: 0;
-
-	function navigateToProject() {
-		goto(`/projects/${project.id}`);
-	}
 </script>
 
-<Card.Root
-	class="cursor-pointer p-4 transition-all duration-300 hover:bg-gray-50 hover:shadow-lg active:scale-95"
-	onclick={navigateToProject}
->
-	<Card.Header>
-		<Card.Title class="text-lg font-semibold">{project.name}</Card.Title>
-	</Card.Header>
+<a href={`/projects/${project.id}`}>
+	<Card.Root
+		class="h-full w-full cursor-pointer p-4 transition-all duration-300 hover:bg-gray-50 hover:shadow-lg active:scale-95"
+	>
+		<Card.Header>
+			<Card.Title class="text-lg font-semibold">{project.name}</Card.Title>
+		</Card.Header>
 
-	<Card.Content class="space-y-3">
-		<div class="text-sm text-gray-500">
-			<span class="font-medium">{project.testRunCount}</span> runs saved
-		</div>
+		<Card.Content class="space-y-3">
+			<div class="text-sm text-gray-500">
+				<span class="font-medium">{project.testRunCount}</span> runs saved
+			</div>
 
-		<div class="space-y-1 text-sm text-gray-500">
-			Last Run:
-			{#if project.lastTestRunSummary}
-				<span class="font-medium"
-					>{new Date(project.lastTestRunSummary.testRunDate).toLocaleDateString()}</span
-				>
-				<div>
-					<div class="flex justify-between text-xs text-gray-600">
-						<span>Status</span>
-						<span>{pass_rate}% Passed</span>
+			<div class="space-y-1 text-sm text-gray-500">
+				Last Run:
+				{#if project.lastTestRunSummary}
+					<span class="font-medium"
+						>{new Date(project.lastTestRunSummary.testRunDate).toLocaleDateString()}</span
+					>
+					<div>
+						<div class="flex justify-between text-xs text-gray-600">
+							<span>Status</span>
+							<span>{pass_rate}% Passed</span>
+						</div>
+						<TestRunProgress
+							passedCount={project.lastTestRunSummary.passedTests}
+							failedCount={project.lastTestRunSummary.failedTests}
+							skippedCount={project.lastTestRunSummary.skippedTests}
+						/>
 					</div>
-					<TestRunProgress
-						passedCount={project.lastTestRunSummary.passedTests}
-						failedCount={project.lastTestRunSummary.failedTests}
-						skippedCount={project.lastTestRunSummary.skippedTests}
-					/>
-				</div>
-			{:else}
-				<span class="text-gray-400">No Runs</span>
-			{/if}
-		</div>
-	</Card.Content>
-</Card.Root>
+				{:else}
+					<span class="text-gray-400">No Runs</span>
+				{/if}
+			</div>
+		</Card.Content>
+	</Card.Root>
+</a>

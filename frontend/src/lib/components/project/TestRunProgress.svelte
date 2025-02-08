@@ -34,7 +34,7 @@
 		</div>
 	</div>
 
-	<div class="mt-2 grid min-w-[250px] grid-cols-3 text-xs text-gray-600">
+	<div class="mt-2 grid w-[250px] grid-cols-3 text-xs text-gray-600">
 		<div class="flex items-center gap-1">
 			<div class="h-3 w-3 rounded-full bg-green-400"></div>
 			<span>Passed: {passedCount}</span>

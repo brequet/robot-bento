@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { getAllProjects } from '$lib/services/projects';
-	import type { ProjectOverviewResponse } from '$lib/types/project';
 	import ProjectList from '$lib/components/project/ProjectList.svelte';
+	import { getAllProjects } from '$lib/services/projects';
+	import type { ProjectOverviewResponse } from '$lib/types/generated';
+	import { onMount } from 'svelte';
 
 	let projects: ProjectOverviewResponse[] = [];
 	let error: string | null = null;

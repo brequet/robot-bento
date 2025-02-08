@@ -75,17 +75,6 @@ impl RobotService {
         Ok(test_runs)
     }
 
-    pub async fn get_all_test_runs_by_project_id(
-        &self,
-        project_id: i32,
-    ) -> Result<Vec<TestRunDB>, Box<dyn std::error::Error>> {
-        let test_runs = self
-            .repository
-            .get_all_test_runs_by_project_id(project_id)
-            .await?;
-        Ok(test_runs)
-    }
-
     pub async fn get_test_run_by_id(
         &self,
         id: i32,

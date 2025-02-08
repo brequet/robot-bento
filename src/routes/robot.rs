@@ -72,23 +72,8 @@ impl RobotHandler {
             .app_data(web::Data::new(self.robot_service.clone()))
             .app_data(web::Data::new(self.projects_service.clone()))
             .app_data(web::Data::new(self.robot_output_parser_service.clone()))
-            .route("/test-runs", web::get().to(Self::get_all_test_runs))
             .route("/test-runs/{id}", web::get().to(Self::get_test_run))
             .route("/upload", web::post().to(Self::upload_robot_output))
-    }
-
-    async fn get_all_test_runs(
-        robot_service: web::Data<Arc<RobotService>>,
-    ) -> Result<HttpResponse, Error> {
-        let test_runs = robot_service.get_all_test_runs().await;
-
-        match test_runs {
-            Ok(test_runs) => Ok(HttpResponse::Ok().json(test_runs)),
-            Err(e) => {
-                error!("Error getting test runs: {:?}", e);
-                Ok(HttpResponse::InternalServerError().finish())
-            }
-        }
     }
 
     async fn get_test_run(

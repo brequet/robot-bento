@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { ProjectOverviewResponse } from '$lib/types/project';
+	import type { ProjectOverviewResponse } from '$lib/types/generated';
 	import ProjectCard from './ProjectCard.svelte';
 
 	export let projects: ProjectOverviewResponse[];
