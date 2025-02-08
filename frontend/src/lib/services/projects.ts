@@ -7,11 +7,9 @@ const PROJECTS_BASE_API = `${API_BASE_URL}/projects`;
 export async function getAllProjects(): Promise<ProjectOverviewResponse[]> {
 	try {
 		const response = await fetch(`${PROJECTS_BASE_API}/overview`);
-
 		if (!response.ok) {
 			throw new Error(`Failed to fetch projects: ${response.statusText}`);
 		}
-
 		return await response.json();
 	} catch (error) {
 		console.error('Error fetching projects:', error);

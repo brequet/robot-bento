@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import TestRunProgress from '$lib/components/project/TestRunProgress.svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import Progress from '$lib/components/ui/progress/progress.svelte';
 	import { getProjectById } from '$lib/services/projects';
 	import type { ProjectResponse } from '$lib/types/generated';
 	import { onMount } from 'svelte';
@@ -69,8 +69,8 @@
 						<Card.Title>Latest Test Run Summary</Card.Title>
 					</Card.Header>
 					<Card.Content>
-						<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-							<div>
+						<div class="flex justify-between">
+							<div class="col-span-2">
 								<p class="text-muted-foreground text-sm">Run Date</p>
 								<p class="text-2xl font-semibold">{formatDate(lastRun.testRunDate)}</p>
 							</div>
@@ -83,47 +83,22 @@
 								<p class="text-2xl font-semibold">{lastRun.appVersion}</p>
 							</div>
 							<div>
-								<p class="text-muted-foreground text-sm">Pass Rate</p>
+								<p class="text-muted-foreground text-sm">Errors</p>
+								<p class="text-2xl font-semibold">{lastRun.errorCount}</p>
+							</div>
+							<div class="col-span-2">
+								<div class="flex justify-between">
+									<p class="text-muted-foreground text-sm">Pass Rate</p>
+									<p class="text-foreground text-sm">{passRate.toFixed(1)}%</p>
+								</div>
 								<div class="mt-2">
-									<Progress value={passRate} class="h-2" />
-									<p class="mt-1 text-sm font-medium">{passRate.toFixed(1)}%</p>
+									<TestRunProgress
+										passedCount={lastRun.passedTests}
+										failedCount={lastRun.failedTests}
+										skippedCount={lastRun.skippedTests}
+									/>
 								</div>
 							</div>
-						</div>
-
-						<div class="mt-6 grid gap-4 md:grid-cols-4">
-							<Card.Root>
-								<Card.Content class="pt-6">
-									<div class="text-center">
-										<div class="text-2xl font-bold text-green-600">{lastRun.passedTests}</div>
-										<p class="text-muted-foreground text-sm">Passed</p>
-									</div>
-								</Card.Content>
-							</Card.Root>
-							<Card.Root>
-								<Card.Content class="pt-6">
-									<div class="text-center">
-										<div class="text-2xl font-bold text-red-600">{lastRun.failedTests}</div>
-										<p class="text-muted-foreground text-sm">Failed</p>
-									</div>
-								</Card.Content>
-							</Card.Root>
-							<Card.Root>
-								<Card.Content class="pt-6">
-									<div class="text-center">
-										<div class="text-2xl font-bold text-yellow-600">{lastRun.skippedTests}</div>
-										<p class="text-muted-foreground text-sm">Skipped</p>
-									</div>
-								</Card.Content>
-							</Card.Root>
-							<Card.Root>
-								<Card.Content class="pt-6">
-									<div class="text-center">
-										<div class="text-2xl font-bold text-orange-600">{lastRun.errorCount}</div>
-										<p class="text-muted-foreground text-sm">Errors</p>
-									</div>
-								</Card.Content>
-							</Card.Root>
 						</div>
 					</Card.Content>
 				</Card.Root>
@@ -146,10 +121,11 @@
 											<p class="font-medium">{run.elapsedTime}</p>
 										</div>
 										<div class="text-right">
-											<p class="text-muted-foreground text-sm">Pass Rate</p>
-											<p class="font-medium">
-												{((run.passedTests / run.totalTests) * 100).toFixed(1)}%
-											</p>
+											<TestRunProgress
+												passedCount={run.passedTests}
+												failedCount={run.failedTests}
+												skippedCount={run.skippedTests}
+											/>
 										</div>
 									</div>
 								</div>

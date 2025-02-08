@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { Progress } from '$lib/components/ui/progress/index.js';
 	import type { ProjectOverviewResponse } from '$lib/types/generated';
+	import TestRunProgress from './TestRunProgress.svelte';
 
 	export let project: ProjectOverviewResponse;
 
@@ -35,14 +35,18 @@
 			Last Run:
 			{#if project.lastTestRunSummary}
 				<span class="font-medium"
-					>{new Date(project.lastTestRunSummary.lastTestRunDate).toLocaleDateString()}</span
+					>{new Date(project.lastTestRunSummary.testRunDate).toLocaleDateString()}</span
 				>
 				<div>
 					<div class="flex justify-between text-xs text-gray-600">
 						<span>Status</span>
 						<span>{pass_rate}% Passed</span>
 					</div>
-					<Progress value={pass_rate} class="h-2 bg-gray-200" />
+					<TestRunProgress
+						passedCount={project.lastTestRunSummary.passedTests}
+						failedCount={project.lastTestRunSummary.failedTests}
+						skippedCount={project.lastTestRunSummary.skippedTests}
+					/>
 				</div>
 			{:else}
 				<span class="text-gray-400">No Runs</span>
