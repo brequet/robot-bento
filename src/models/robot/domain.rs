@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{Duration, NaiveDateTime};
 
 use crate::{models::projects::api::ApiTestRunSummary, utils};
 
@@ -7,6 +7,7 @@ pub struct ProjectLatestTestRunSummary {
     pub test_run_count: i32,
     pub last_test_run_id: i32,
     pub last_test_run_date: NaiveDateTime,
+    pub last_elapsed_time: Duration,
     pub last_total_test_count: i32,
     pub last_passed_tests: i32,
     pub last_failed_tests: i32,
@@ -19,6 +20,7 @@ impl ProjectLatestTestRunSummary {
         ApiTestRunSummary {
             test_run_id: self.last_test_run_id,
             test_run_date: utils::date::format_datetime(self.last_test_run_date),
+            elapsed_time: utils::date::duration_to_string(self.last_elapsed_time),
             total_tests: self.last_total_test_count,
             passed_tests: self.last_passed_tests,
             failed_tests: self.last_failed_tests,

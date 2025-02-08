@@ -14,7 +14,8 @@ SELECT DISTINCT ON (tr.project_id) tr.project_id,
     stats.pass_count as last_passed_tests,
     stats.fail_count as last_failed_tests,
     stats.skip_count as last_skipped_tests,
-    errors.error_count as last_error_count
+    errors.error_count as last_error_count,
+    timing.elapsed_time as last_elapsed_time
 FROM test_runs tr
     JOIN test_run_statistics stats ON stats.test_run_id = tr.id
     JOIN total_count ON total_count.project_id = tr.project_id
@@ -24,6 +25,12 @@ FROM test_runs tr
         FROM test_run_errors
         GROUP BY test_run_id
     ) errors ON errors.test_run_id = tr.id
+    LEFT JOIN (
+        SELECT test_run_id,
+            s.end_time - s.start_time AS elapsed_time
+        FROM suites s
+        WHERE s.parent_suite_id IS NULL
+    ) timing ON timing.test_run_id = tr.id
 WHERE tr.project_id IN (
         SELECT unnest($1::integer [])
     )

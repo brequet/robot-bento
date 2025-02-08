@@ -18,6 +18,7 @@ pub struct ProjectOverviewResponse {
 pub struct ApiTestRunSummary {
     pub test_run_id: i32,
     pub test_run_date: String,
+    pub elapsed_time: String,
     pub total_tests: i32,
     pub passed_tests: i32,
     pub failed_tests: i32,
