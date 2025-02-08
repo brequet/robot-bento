@@ -24,6 +24,7 @@ pub struct ApiTestRunSummary {
     pub failed_tests: i32,
     pub skipped_tests: i32,
     pub error_count: i32,
+    pub app_version: String,
 }
 
 #[typeshare]
@@ -35,5 +36,4 @@ pub struct ProjectResponse {
     pub create_date: String,
     pub test_run_count: i32,
     pub test_runs_summaries: Vec<ApiTestRunSummary>,
-    // pub test_runs: Vec<TestRunDB>,
 }

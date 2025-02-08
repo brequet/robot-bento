@@ -3,9 +3,9 @@ use std::sync::Arc;
 use tracing::info;
 
 use crate::{
-    models::{
-        projects::{api::ProjectOverviewResponse, domain::NewProject},
-        projects_legacy::Project,
+    models::projects::{
+        api::{ProjectOverviewResponse, ProjectResponse},
+        domain::NewProject,
     },
     repositories::projects::ProjectsRepository,
     utils,
@@ -34,7 +34,7 @@ impl ProjectsService {
 
         let projects_test_run_data = self
             .robot_service
-            .get_test_runs_data_by_project_ids(project_ids)
+            .get_latest_test_runs_data_by_project_ids(project_ids)
             .await?;
 
         let project_overviews = projects
@@ -83,20 +83,15 @@ impl ProjectsService {
     pub async fn get_project_by_id(
         &self,
         project_id: i32,
-    ) -> Result<Option<Project>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<ProjectResponse>, Box<dyn std::error::Error>> {
         let project_data = self.repository.get_project_by_id(project_id).await?;
         match project_data {
             Some(project_data) => {
-                let test_runs = self
+                let test_runs_summaries = self
                     .robot_service
-                    .get_all_test_runs_by_project_id(project_id)
+                    .get_test_runs_summaries_by_project_id(project_id)
                     .await?;
-                Ok(Some(Project {
-                    id: project_data.id,
-                    name: project_data.name,
-                    test_run_count: test_runs.len() as i32,
-                    test_runs: test_runs,
-                }))
+                Ok(Some(project_data.to_project_response(test_runs_summaries)))
             }
             None => Ok(None),
         }

@@ -1,7 +1,6 @@
 import { API_BASE_URL } from '$lib/config';
 
-// TODO: project should be generated from api model
-import type { Project, ProjectOverviewResponse } from '$lib/types/generated';
+import type { ProjectOverviewResponse, ProjectResponse } from '$lib/types/generated';
 
 const PROJECTS_BASE_API = `${API_BASE_URL}/projects`;
 
@@ -20,7 +19,7 @@ export async function getAllProjects(): Promise<ProjectOverviewResponse[]> {
 	}
 }
 
-export async function getProjectById(id: string): Promise<Project | null> {
+export async function getProjectById(id: string): Promise<ProjectResponse | null> {
 	try {
 		const response = await fetch(`${PROJECTS_BASE_API}/${id}`);
 		if (!response.ok) throw new Error('Failed to fetch project details');

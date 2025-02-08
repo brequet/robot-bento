@@ -1,5 +1,5 @@
 use crate::{
-    models::{robot::{db::ProjectTestSummaryDB, domain::ProjectLatestTestRunSummary}, robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}},
+    models::{robot::{db::ProjectTestSummaryDB, domain::ProjectTestRunSummary}, robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}},
     services::parser::{self, Keyword}};
 use chrono::NaiveDateTime;
 use sqlx::{query_file, query_file_as, query_scalar, PgPool};
@@ -64,15 +64,32 @@ impl RobotRepository {
         Self { pool }
     }
 
-    pub async fn get_test_summaries(&self, project_ids: &Vec<i32>) -> Result<Vec<ProjectLatestTestRunSummary>, sqlx::Error> {
+    pub async fn get_latest_test_runs_summaries_for_projects(&self, project_ids: &Vec<i32>) -> Result<Vec<ProjectTestRunSummary>, sqlx::Error> {
         query_file_as!(
             ProjectTestSummaryDB,
-            "./src/repositories/queries/robot/get_test_summaries.sql",
+            "./src/repositories/queries/robot/get_latest_test_runs_summaries_for_projects.sql",
             project_ids
         )
         .fetch_all(&self.pool)
         .await
-        .inspect_err(|e| tracing::error!("Query get_test_summaries failed: {:?}", e))
+        .inspect_err(|e| tracing::error!("Query get_latest_test_runs_summaries_for_projects failed: {:?}", e))
+        .map(|test_run_summary| {
+            test_run_summary
+                .into_iter()
+                .map(|test_run_summary| test_run_summary.into_summary())
+                .collect()
+        })
+    }
+
+    pub async fn get_test_runs_summaries_by_project_id(&self, project_id: i32) -> Result<Vec<ProjectTestRunSummary>, sqlx::Error> {
+        query_file_as!(
+            ProjectTestSummaryDB,
+            "./src/repositories/queries/robot/get_test_runs_summaries_by_project_id.sql",
+            project_id
+        )
+        .fetch_all(&self.pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_test_runs_summaries_by_project_id failed: {:?}", e))
         .map(|test_run_summary| {
             test_run_summary
                 .into_iter()

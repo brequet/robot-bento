@@ -1,153 +1,163 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
+	import * as Alert from '$lib/components/ui/alert/index.js';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import Progress from '$lib/components/ui/progress/progress.svelte';
 	import { getProjectById } from '$lib/services/projects';
-	import type { Project } from '$lib/types/project';
-	import { Alert, AlertTitle, AlertDescription } from '$lib/components/ui/alert';
-	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Progress } from '$lib/components/ui/progress';
-	import type { Stat } from '$lib/types/robot';
+	import type { ProjectResponse } from '$lib/types/generated';
+	import { onMount } from 'svelte';
 
-	let project: Project | null = null;
-	let error: string | null = null;
-
-	$: projectId = $page.params.id;
+	let project: ProjectResponse | null = $state(null);
+	let error: string | null = $state(null);
 
 	onMount(async () => {
-		project = await getProjectById(projectId);
+		project = await getProjectById(page.params.id);
 		if (!project) error = 'Failed to load project details.';
 	});
 
-	function getLatestStats(stats: Stat[]) {
-		return stats.find((s) => s.stat_type === 'Total') ?? null;
-	}
+	let lastRun = $derived(project?.testRunsSummaries[0]);
+	let passRate = $derived(lastRun ? (lastRun.passedTests / lastRun.totalTests) * 100 : 0);
 
-	function calculatePassRate(stats: Stat) {
-		const total = stats.pass_count + stats.fail_count + stats.skip_count;
-		return total > 0 ? (stats.pass_count / total) * 100 : 0;
-	}
-
-	function formatDate(dateStr: string) {
-		return new Date(dateStr).toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric'
-		});
+	function formatDate(dateString: string) {
+		const date = new Date(dateString);
+		const months = [
+			'Jan',
+			'Feb',
+			'Mar',
+			'Apr',
+			'May',
+			'Jun',
+			'Jul',
+			'Aug',
+			'Sep',
+			'Oct',
+			'Nov',
+			'Dec'
+		];
+		const month = months[date.getMonth()];
+		const day = date.getDate();
+		const year = date.getFullYear();
+		const hours = date.getHours().toString().padStart(2, '0');
+		const minutes = date.getMinutes().toString().padStart(2, '0');
+		return `${month} ${day}, ${year} at ${hours}:${minutes}`;
 	}
 </script>
 
 <main class="bg-background min-h-screen px-6 py-12">
-	<div class="mx-auto max-w-6xl space-y-6">
-		{#if error}
-			<Alert variant="destructive">
-				<AlertTitle>Error</AlertTitle>
-				<AlertDescription>{error}</AlertDescription>
-			</Alert>
-		{:else if project}
+	{#if error}
+		<Alert.Root variant="destructive" class="mb-6">
+			<Alert.Description>{error}</Alert.Description>
+		</Alert.Root>
+	{/if}
+
+	{#if project}
+		<div class="space-y-6">
 			<div class="flex items-center justify-between">
-				<h1 class="text-4xl font-bold tracking-tight">{project.name}</h1>
-				<Badge variant="outline">
-					{project.test_run_count} Test Runs
-				</Badge>
+				<div>
+					<h1 class="text-3xl font-bold">{project.name}</h1>
+					<p class="text-muted-foreground">Created {formatDate(project.createDate)}</p>
+				</div>
+				<div class="text-right">
+					<p class="text-2xl font-semibold">{project.testRunCount}</p>
+					<p class="text-muted-foreground">Total Test Runs</p>
+				</div>
 			</div>
 
-			{#if project.test_runs.length > 0}
-				{@const latestRun = project.test_runs[0]}
-				{@const stats = getLatestStats(latestRun.statistics)}
-
-				<h2 class="text-2xl font-bold">Latest Run</h2>
-
-				<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-					<Card>
-						<CardHeader>
-							<CardTitle>Overview</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div class="space-y-4">
-								<div>
-									<p class="text-muted-foreground text-sm">Generated</p>
-									<p class="text-lg font-medium">{formatDate(latestRun.generated_date)}</p>
-								</div>
-								<div>
-									<p class="text-muted-foreground text-sm">Application</p>
-									<p class="text-lg font-medium">{latestRun.app_name}@{latestRun.app_version}</p>
+			{#if lastRun}
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Latest Test Run Summary</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+							<div>
+								<p class="text-muted-foreground text-sm">Run Date</p>
+								<p class="text-2xl font-semibold">{formatDate(lastRun.testRunDate)}</p>
+							</div>
+							<div>
+								<p class="text-muted-foreground text-sm">Duration</p>
+								<p class="text-2xl font-semibold">{lastRun.elapsedTime}</p>
+							</div>
+							<div>
+								<p class="text-muted-foreground text-sm">App Version</p>
+								<p class="text-2xl font-semibold">{lastRun.appVersion}</p>
+							</div>
+							<div>
+								<p class="text-muted-foreground text-sm">Pass Rate</p>
+								<div class="mt-2">
+									<Progress value={passRate} class="h-2" />
+									<p class="mt-1 text-sm font-medium">{passRate.toFixed(1)}%</p>
 								</div>
 							</div>
-						</CardContent>
-					</Card>
+						</div>
 
-					{#if stats}
-						<Card>
-							<CardHeader>
-								<CardTitle>Test Results</CardTitle>
-							</CardHeader>
-							<CardContent>
-								<div class="space-y-4">
-									<Progress value={calculatePassRate(stats)} />
-									<div class="grid grid-cols-3 gap-4 text-center">
-										<div>
-											<p class="text-muted-foreground text-sm">Passed</p>
-											<p class="text-lg font-medium text-green-600">{stats.pass_count}</p>
+						<div class="mt-6 grid gap-4 md:grid-cols-4">
+							<Card.Root>
+								<Card.Content class="pt-6">
+									<div class="text-center">
+										<div class="text-2xl font-bold text-green-600">{lastRun.passedTests}</div>
+										<p class="text-muted-foreground text-sm">Passed</p>
+									</div>
+								</Card.Content>
+							</Card.Root>
+							<Card.Root>
+								<Card.Content class="pt-6">
+									<div class="text-center">
+										<div class="text-2xl font-bold text-red-600">{lastRun.failedTests}</div>
+										<p class="text-muted-foreground text-sm">Failed</p>
+									</div>
+								</Card.Content>
+							</Card.Root>
+							<Card.Root>
+								<Card.Content class="pt-6">
+									<div class="text-center">
+										<div class="text-2xl font-bold text-yellow-600">{lastRun.skippedTests}</div>
+										<p class="text-muted-foreground text-sm">Skipped</p>
+									</div>
+								</Card.Content>
+							</Card.Root>
+							<Card.Root>
+								<Card.Content class="pt-6">
+									<div class="text-center">
+										<div class="text-2xl font-bold text-orange-600">{lastRun.errorCount}</div>
+										<p class="text-muted-foreground text-sm">Errors</p>
+									</div>
+								</Card.Content>
+							</Card.Root>
+						</div>
+					</Card.Content>
+				</Card.Root>
+
+				<Card.Root>
+					<Card.Header>
+						<Card.Title>Test Run History</Card.Title>
+					</Card.Header>
+					<Card.Content>
+						<div class="space-y-4">
+							{#each project.testRunsSummaries as run}
+								<div class="flex items-center justify-between rounded-lg border p-4">
+									<div>
+										<p class="font-medium">{formatDate(run.testRunDate)}</p>
+										<p class="text-muted-foreground text-sm">Version {run.appVersion}</p>
+									</div>
+									<div class="flex items-center gap-4">
+										<div class="text-right">
+											<p class="text-muted-foreground text-sm">Duration</p>
+											<p class="font-medium">{run.elapsedTime}</p>
 										</div>
-										<div>
-											<p class="text-muted-foreground text-sm">Failed</p>
-											<p class="text-lg font-medium text-red-600">{stats.fail_count}</p>
-										</div>
-										<div>
-											<p class="text-muted-foreground text-sm">Skipped</p>
-											<p class="text-lg font-medium text-yellow-600">{stats.skip_count}</p>
+										<div class="text-right">
+											<p class="text-muted-foreground text-sm">Pass Rate</p>
+											<p class="font-medium">
+												{((run.passedTests / run.totalTests) * 100).toFixed(1)}%
+											</p>
 										</div>
 									</div>
 								</div>
-							</CardContent>
-						</Card>
-					{/if}
-
-					<Card>
-						<CardHeader>
-							<CardTitle>Environment</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<div class="space-y-4">
-								<div>
-									<p class="text-muted-foreground text-sm">RPA</p>
-									<p class="text-lg font-medium">{latestRun.rpa ? 'Yes' : 'No'}</p>
-								</div>
-								<div>
-									<p class="text-muted-foreground text-sm">Schema Version</p>
-									<p class="text-lg font-medium">{latestRun.schema_version}</p>
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-				</div>
+							{/each}
+						</div>
+					</Card.Content>
+				</Card.Root>
 			{/if}
-
-			<Card>
-				<CardHeader>
-					<CardTitle>Test Runs</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<div class="space-y-4">
-						{#each project.test_runs as testRun}
-							<div
-								class="hover:bg-muted/50 flex items-center justify-between rounded-lg border p-4"
-							>
-								<div>
-									<p class="font-medium">{formatDate(testRun.generated_date)}</p>
-								</div>
-							</div>
-						{/each}
-					</div>
-				</CardContent>
-			</Card>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </main>
-
-<style>
-	:global(.badge-success) {
-		@apply bg-green-100 text-green-800 hover:bg-green-100/80;
-	}
-</style>

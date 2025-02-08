@@ -9,13 +9,14 @@ WITH total_count AS (
 )
 SELECT DISTINCT ON (tr.project_id) tr.project_id,
     total_count.total_rows as test_run_count,
-    tr.id as last_test_run_id,
-    tr.generated_date as last_test_run_date,
-    stats.pass_count as last_passed_tests,
-    stats.fail_count as last_failed_tests,
-    stats.skip_count as last_skipped_tests,
-    errors.error_count as last_error_count,
-    timing.elapsed_time as last_elapsed_time
+    tr.id as test_run_id,
+    tr.application_version as application_version,
+    tr.generated_date as test_run_date,
+    stats.pass_count as passed_tests,
+    stats.fail_count as failed_tests,
+    stats.skip_count as skipped_tests,
+    errors.error_count as error_count,
+    timing.elapsed_time as elapsed_time
 FROM test_runs tr
     JOIN test_run_statistics stats ON stats.test_run_id = tr.id
     JOIN total_count ON total_count.project_id = tr.project_id

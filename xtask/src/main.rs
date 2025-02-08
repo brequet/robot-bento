@@ -6,7 +6,7 @@ fn main() {
             "./src/models/",
             "--lang=typescript",
             "--output-file",
-            "./frontend/src/types/generated.ts",
+            "./frontend/src/lib/types/generated.ts",
         ])
         .status()
         .expect("Failed to run typeshare");
