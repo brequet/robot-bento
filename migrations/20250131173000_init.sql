@@ -1,7 +1,7 @@
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
-    create_date TIMESTAMP DEFAULT NOW()
+    create_date TIMESTAMP DEFAULT NOW() NOT NULL
 );
 CREATE TABLE test_runs (
     id SERIAL PRIMARY KEY,

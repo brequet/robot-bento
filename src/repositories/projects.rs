@@ -1,12 +1,9 @@
-use chrono::NaiveDateTime;
 use sqlx::PgPool;
 
-#[derive(sqlx::FromRow)]
-pub struct ProjectDB {
-    pub id: Option<i32>,
-    pub name: String,
-    pub create_date: Option<NaiveDateTime>,
-}
+use crate::models::projects::{
+    db::ProjectDB,
+    domain::{NewProject, SavedProject},
+};
 
 pub struct ProjectsRepository {
     pool: PgPool,
@@ -17,7 +14,7 @@ impl ProjectsRepository {
         Self { pool }
     }
 
-    pub async fn get_projects(&self) -> Result<Vec<ProjectDB>, sqlx::Error> {
+    pub async fn get_projects(&self) -> Result<Vec<SavedProject>, sqlx::Error> {
         sqlx::query_as!(
             ProjectDB,
             r#"--sql
@@ -28,12 +25,18 @@ impl ProjectsRepository {
         .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_projects failed: {:?}", e))
+        .map(|projects| {
+            projects
+                .into_iter()
+                .map(|project| project.into_saved())
+                .collect()
+        })
     }
 
     pub async fn get_project_by_id(
         &self,
         project_id: i32,
-    ) -> Result<Option<ProjectDB>, sqlx::Error> {
+    ) -> Result<Option<SavedProject>, sqlx::Error> {
         sqlx::query_as!(
             ProjectDB,
             r#"--sql
@@ -46,6 +49,7 @@ impl ProjectsRepository {
         .fetch_optional(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_project_by_id failed: {:?}", e))
+        .map(|opt_project| opt_project.map(|project| project.into_saved()))
     }
 
     pub async fn get_project_id_by_name(
@@ -65,17 +69,19 @@ impl ProjectsRepository {
         .inspect_err(|e| tracing::error!("Query get_project_id_by_name failed: {:?}", e))
     }
 
-    pub async fn insert_project(&self, project: ProjectDB) -> Result<i32, sqlx::Error> {
-        sqlx::query_scalar!(
+    pub async fn insert_project(&self, project: NewProject) -> Result<SavedProject, sqlx::Error> {
+        sqlx::query_as!(
+            ProjectDB,
             r#"--sql
             INSERT INTO projects (name)
             VALUES ($1)
-            RETURNING id
+            RETURNING id, name, create_date
             "#,
             project.name
         )
         .fetch_one(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query insert_project failed: {:?}", e))
+        .map(|project| project.into_saved())
     }
 }

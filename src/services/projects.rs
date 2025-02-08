@@ -4,10 +4,13 @@ use tracing::info;
 
 use crate::{
     models::{
-        projects::api::{ProjectOverviewResponse, TestRunSummary},
+        projects::{
+            api::{ProjectOverviewResponse, TestRunSummary},
+            domain::NewProject,
+        },
         projects_legacy::Project,
     },
-    repositories::projects::{ProjectDB, ProjectsRepository},
+    repositories::projects::ProjectsRepository,
     utils,
 };
 
@@ -30,49 +33,36 @@ impl ProjectsService {
         &self,
     ) -> Result<Vec<ProjectOverviewResponse>, Box<dyn std::error::Error>> {
         let projects = self.repository.get_projects().await?;
+        let project_ids = &projects.iter().map(|project| project.id).collect();
 
-        let project_test_run_data = self
+        let projects_test_run_data = self
             .robot_service
-            .get_test_run_data_by_project_ids(
-                &projects.iter().map(|p| p.id.unwrap()).collect::<Vec<i32>>(),
-            )
+            .get_test_run_data_by_project_ids(project_ids)
             .await?;
 
         let project_overviews = projects
             .iter()
             .map(|project| {
-                let test_run_data = project_test_run_data
+                let test_run_data = projects_test_run_data
                     .iter()
-                    .find(|data| data.project_id == project.id.unwrap());
+                    .find(|data| data.project_id == project.id);
 
-                let mut test_run_count = 0;
-                if let Some(data) = test_run_data {
-                    test_run_count = data.test_run_count;
-                }
+                let test_run_count = test_run_data.map(|data| data.test_run_count).unwrap_or(0);
 
-                let project_test_run = match test_run_data {
-                    Some(data) => {
-                        if data.last_test_run_date.is_some() {
-                            Some(TestRunSummary {
-                                last_test_run_date: utils::date::format_datetime(
-                                    data.last_test_run_date.unwrap(),
-                                ),
-                                total_tests: data.last_total_tests.unwrap(),
-                                passed_tests: data.last_passed_tests.unwrap(),
-                                failed_tests: data.last_failed_tests.unwrap(),
-                                skipped_tests: data.last_skipped_tests.unwrap(),
-                            })
-                        } else {
-                            None
-                        }
-                    }
-                    None => None,
-                };
+                let project_test_run = test_run_data.and_then(|data| {
+                    data.last_test_run_date.map(|date| TestRunSummary {
+                        last_test_run_date: utils::date::format_datetime(date),
+                        total_tests: data.last_total_tests.unwrap(),
+                        passed_tests: data.last_passed_tests.unwrap(),
+                        failed_tests: data.last_failed_tests.unwrap(),
+                        skipped_tests: data.last_skipped_tests.unwrap(),
+                    })
+                });
 
                 ProjectOverviewResponse {
-                    id: project.id.unwrap(),
+                    id: project.id,
                     name: project.name.clone(),
-                    create_date: utils::date::format_datetime(project.create_date.unwrap()),
+                    create_date: utils::date::format_datetime(project.create_date),
                     test_run_count: test_run_count,
                     last_test_run_summary: project_test_run,
                 }
@@ -94,13 +84,11 @@ impl ProjectsService {
             }
             None => {
                 info!("Creating project {}", project_name);
-                let project = ProjectDB {
-                    id: None,
+                let new_project = NewProject {
                     name: project_name.to_string(),
-                    create_date: None,
                 };
-                let project_id = self.repository.insert_project(project).await?;
-                Ok(project_id)
+                let saved_project = self.repository.insert_project(new_project).await?;
+                Ok(saved_project.id)
             }
         }
     }
@@ -109,6 +97,7 @@ impl ProjectsService {
         &self,
         project_id: i32,
     ) -> Result<Option<Project>, Box<dyn std::error::Error>> {
+        // TODO: to SavedProject
         let project_data = self.repository.get_project_by_id(project_id).await?;
         match project_data {
             Some(project_data) => {
@@ -117,7 +106,7 @@ impl ProjectsService {
                     .get_all_test_runs_by_project_id(project_id)
                     .await?;
                 Ok(Some(Project {
-                    id: project_data.id.unwrap(),
+                    id: project_data.id,
                     name: project_data.name,
                     test_run_count: test_runs.len() as i32,
                     test_runs: test_runs,
