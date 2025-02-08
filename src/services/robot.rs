@@ -1,7 +1,7 @@
 use tracing::{info, warn};
 
 use crate::{
-    models::{robot::domain::ProjectTestRunsSummary, robot_legacy::TestRunDB},
+    models::{robot::domain::ProjectLatestTestRunSummary, robot_legacy::TestRunDB},
     repositories::robot::RobotRepository,
 };
 
@@ -47,7 +47,7 @@ impl RobotService {
     pub async fn get_test_runs_data_by_project_ids(
         &self,
         project_ids: &Vec<i32>,
-    ) -> Result<Vec<ProjectTestRunsSummary>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<ProjectLatestTestRunSummary>, Box<dyn std::error::Error>> {
         if project_ids.is_empty() {
             return Ok(vec![]);
         }

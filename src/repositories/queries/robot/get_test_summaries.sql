@@ -8,14 +8,22 @@ WITH total_count AS (
     GROUP BY project_id
 )
 SELECT DISTINCT ON (tr.project_id) tr.project_id,
-    COALESCE(total_count.total_rows, 0) as test_run_count,
+    total_count.total_rows as test_run_count,
+    tr.id as last_test_run_id,
     tr.generated_date as last_test_run_date,
     stats.pass_count as last_passed_tests,
     stats.fail_count as last_failed_tests,
-    stats.skip_count as last_skipped_tests
+    stats.skip_count as last_skipped_tests,
+    errors.error_count as last_error_count
 FROM test_runs tr
     JOIN test_run_statistics stats ON stats.test_run_id = tr.id
     JOIN total_count ON total_count.project_id = tr.project_id
+    LEFT JOIN (
+        SELECT test_run_id,
+            COUNT(*)::INTEGER as error_count
+        FROM test_run_errors
+        GROUP BY test_run_id
+    ) errors ON errors.test_run_id = tr.id
 WHERE tr.project_id IN (
         SELECT unnest($1::integer [])
     )

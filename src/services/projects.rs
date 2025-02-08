@@ -84,7 +84,6 @@ impl ProjectsService {
         &self,
         project_id: i32,
     ) -> Result<Option<Project>, Box<dyn std::error::Error>> {
-        // TODO: to SavedProject
         let project_data = self.repository.get_project_by_id(project_id).await?;
         match project_data {
             Some(project_data) => {

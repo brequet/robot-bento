@@ -1,5 +1,5 @@
 use crate::{
-    models::{robot::{db::ProjectTestSummaryDB, domain::ProjectTestRunsSummary}, robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}},
+    models::{robot::{db::ProjectTestSummaryDB, domain::ProjectLatestTestRunSummary}, robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}},
     services::parser::{self, Keyword}};
 use chrono::NaiveDateTime;
 use sqlx::{query_file, query_file_as, query_scalar, PgPool};
@@ -64,7 +64,7 @@ impl RobotRepository {
         Self { pool }
     }
 
-    pub async fn get_test_summaries(&self, project_ids: &Vec<i32>) -> Result<Vec<ProjectTestRunsSummary>, sqlx::Error> {
+    pub async fn get_test_summaries(&self, project_ids: &Vec<i32>) -> Result<Vec<ProjectLatestTestRunSummary>, sqlx::Error> {
         query_file_as!(
             ProjectTestSummaryDB,
             "./src/repositories/queries/robot/get_test_summaries.sql",
