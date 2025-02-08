@@ -1,4 +1,6 @@
-use crate::{models::robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}, services::parser::{self, Keyword}};
+use crate::{
+    models::{robot::{db::ProjectTestSummaryDB, domain::ProjectTestRunsSummary}, robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}},
+    services::parser::{self, Keyword}};
 use chrono::NaiveDateTime;
 use sqlx::{query_file, query_file_as, query_scalar, PgPool};
 
@@ -39,17 +41,6 @@ pub struct TestDBPartial {
     pub timeout: Option<String>,
 }
 
-#[derive(sqlx::FromRow)]
-pub struct TestRunOverviewDB {
-    pub project_id: Option<i32>,
-    pub application_version: String,
-    pub test_run_count: Option<i32>,
-    pub last_test_run_date: Option<NaiveDateTime>,
-    pub last_passed_tests: Option<i32>,
-    pub last_failed_tests: Option<i32>,
-    pub last_skipped_tests: Option<i32>,
-}
-
 enum SuiteKeywordType {
     Setup,
     Teardown,
@@ -73,15 +64,21 @@ impl RobotRepository {
         Self { pool }
     }
 
-    pub async fn get_test_runs_data_by_project_ids(&self, project_ids: &Vec<i32>) -> Result<Vec<TestRunOverviewDB>, sqlx::Error> {
+    pub async fn get_test_summaries(&self, project_ids: &Vec<i32>) -> Result<Vec<ProjectTestRunsSummary>, sqlx::Error> {
         query_file_as!(
-            TestRunOverviewDB,
-            "./src/repositories/queries/robot/get_test_runs_data_by_project_ids.sql",
+            ProjectTestSummaryDB,
+            "./src/repositories/queries/robot/get_test_summaries.sql",
             project_ids
         )
         .fetch_all(&self.pool)
         .await
-        .inspect_err(|e| tracing::error!("Query get_test_runs_data_by_project_ids failed: {:?}", e))
+        .inspect_err(|e| tracing::error!("Query get_test_summaries failed: {:?}", e))
+        .map(|test_run_summary| {
+            test_run_summary
+                .into_iter()
+                .map(|test_run_summary| test_run_summary.into_summary())
+                .collect()
+        })
     }
 
     pub async fn get_all_test_runs(&self) -> Result<Vec<TestRunDB>, sqlx::Error> {

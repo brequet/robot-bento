@@ -9,19 +9,18 @@ pub struct ProjectOverviewResponse {
     pub name: String,
     pub create_date: String,
     pub test_run_count: i32,
-    pub last_test_run_summary: Option<TestRunSummary>,
+    pub last_test_run_summary: Option<ApiTestRunSummary>,
 }
 
 #[typeshare]
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TestRunSummary {
+pub struct ApiTestRunSummary {
     pub test_run_date: String,
     pub total_tests: i32,
     pub passed_tests: i32,
     pub failed_tests: i32,
     pub skipped_tests: i32,
-    // pub elapsed_time: i32,
 }
 
 #[derive(Serialize)]

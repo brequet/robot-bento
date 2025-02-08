@@ -4,10 +4,7 @@ use tracing::info;
 
 use crate::{
     models::{
-        projects::{
-            api::{ProjectOverviewResponse, TestRunSummary},
-            domain::NewProject,
-        },
+        projects::{api::ProjectOverviewResponse, domain::NewProject},
         projects_legacy::Project,
     },
     repositories::projects::ProjectsRepository,
@@ -49,22 +46,12 @@ impl ProjectsService {
 
                 let test_run_count = test_run_data.map(|data| data.test_run_count).unwrap_or(0);
 
-                let project_test_run = test_run_data.and_then(|data| {
-                    data.last_test_run_date.map(|date| TestRunSummary {
-                        test_run_date: utils::date::format_datetime(date),
-                        total_tests: data.last_total_tests.unwrap(),
-                        passed_tests: data.last_passed_tests.unwrap(),
-                        failed_tests: data.last_failed_tests.unwrap(),
-                        skipped_tests: data.last_skipped_tests.unwrap(),
-                    })
-                });
-
                 ProjectOverviewResponse {
                     id: project.id,
                     name: project.name.clone(),
                     create_date: utils::date::format_datetime(project.create_date),
                     test_run_count: test_run_count,
-                    last_test_run_summary: project_test_run,
+                    last_test_run_summary: test_run_data.map(|data| data.to_api()),
                 }
             })
             .collect();

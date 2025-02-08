@@ -3,7 +3,7 @@
 */
 
 export interface TestRunSummary {
-	lastTestRunDate: string;
+	testRunDate: string;
 	totalTests: number;
 	passedTests: number;
 	failedTests: number;
