@@ -37,7 +37,7 @@ impl ProjectsService {
 
         let projects_test_run_data = self
             .robot_service
-            .get_test_run_data_by_project_ids(project_ids)
+            .get_test_runs_data_by_project_ids(project_ids)
             .await?;
 
         let project_overviews = projects
@@ -51,7 +51,7 @@ impl ProjectsService {
 
                 let project_test_run = test_run_data.and_then(|data| {
                     data.last_test_run_date.map(|date| TestRunSummary {
-                        last_test_run_date: utils::date::format_datetime(date),
+                        test_run_date: utils::date::format_datetime(date),
                         total_tests: data.last_total_tests.unwrap(),
                         passed_tests: data.last_passed_tests.unwrap(),
                         failed_tests: data.last_failed_tests.unwrap(),

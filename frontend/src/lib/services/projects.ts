@@ -1,8 +1,9 @@
 import { API_BASE_URL } from '$lib/config';
 
-import type { Project, ProjectOverviewResponse } from '$lib/types/project';
+// TODO: project should be generated from api model
+import type { Project, ProjectOverviewResponse } from '$lib/types/generated';
 
-const PROJECTS_BASE_API = `${API_BASE_URL}/projects`
+const PROJECTS_BASE_API = `${API_BASE_URL}/projects`;
 
 export async function getAllProjects(): Promise<ProjectOverviewResponse[]> {
 	try {

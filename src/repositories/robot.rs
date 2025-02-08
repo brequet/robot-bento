@@ -1,4 +1,4 @@
-use crate::{models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}, services::parser::{self, Keyword}};
+use crate::{models::robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}, services::parser::{self, Keyword}};
 use chrono::NaiveDateTime;
 use sqlx::{query_file, query_file_as, query_scalar, PgPool};
 
@@ -9,7 +9,6 @@ struct TestRunDBPartial {
     pub generator: String,
     pub generated_date: NaiveDateTime,
     pub schema_version: String,
-    pub application_name: String,
     pub application_version: String,
     pub sha1: String,
     pub imported_date: NaiveDateTime,
@@ -43,7 +42,6 @@ pub struct TestDBPartial {
 #[derive(sqlx::FromRow)]
 pub struct TestRunOverviewDB {
     pub project_id: Option<i32>,
-    pub application_name: String,
     pub application_version: String,
     pub test_run_count: Option<i32>,
     pub last_test_run_date: Option<NaiveDateTime>,
@@ -75,21 +73,21 @@ impl RobotRepository {
         Self { pool }
     }
 
-    pub async fn get_test_run_data_by_project_ids(&self, project_ids: &Vec<i32>) -> Result<Vec<TestRunOverviewDB>, sqlx::Error> {
+    pub async fn get_test_runs_data_by_project_ids(&self, project_ids: &Vec<i32>) -> Result<Vec<TestRunOverviewDB>, sqlx::Error> {
         query_file_as!(
             TestRunOverviewDB,
-            "./src/repositories/sql/robot/get_test_run_data_by_project_ids.sql",
+            "./src/repositories/queries/robot/get_test_runs_data_by_project_ids.sql",
             project_ids
         )
         .fetch_all(&self.pool)
         .await
-        .inspect_err(|e| tracing::error!("Query get_test_run_data_by_project_ids failed: {:?}", e))
+        .inspect_err(|e| tracing::error!("Query get_test_runs_data_by_project_ids failed: {:?}", e))
     }
 
     pub async fn get_all_test_runs(&self) -> Result<Vec<TestRunDB>, sqlx::Error> {
         let test_runs = query_file_as!(
             TestRunDBPartial,
-            "./src/repositories/sql/robot/get_all_test_runs.sql",
+            "./src/repositories/queries/robot/get_all_test_runs.sql",
         )
         .fetch_all(&self.pool)
         .await
@@ -107,7 +105,7 @@ impl RobotRepository {
                 generator: test_run.generator,
                 generated_date: test_run.generated_date,
                 schema_version: test_run.schema_version,
-                app_name: test_run.application_name,
+                app_name: "".to_string(),
                 app_version: test_run.application_version,
                 sha1: test_run.sha1,
                 imported_date: Some(test_run.imported_date),
@@ -123,7 +121,7 @@ impl RobotRepository {
     pub async fn get_all_test_runs_by_project_id(&self, project_id: i32) -> Result<Vec<TestRunDB>, sqlx::Error> {
         let test_runs = query_file_as!(
             TestRunDBPartial,
-            "./src/repositories/sql/robot/get_all_test_runs_by_project_id.sql",
+            "./src/repositories/queries/robot/get_all_test_runs_by_project_id.sql",
             project_id
         )
         .fetch_all(&self.pool)
@@ -142,7 +140,7 @@ impl RobotRepository {
                 generator: test_run.generator,
                 generated_date: test_run.generated_date,
                 schema_version: test_run.schema_version,
-                app_name: test_run.application_name,
+                app_name: "".to_string(),
                 app_version: test_run.application_version,
                 sha1: test_run.sha1,
                 imported_date: Some(test_run.imported_date),
@@ -161,7 +159,7 @@ impl RobotRepository {
     ) -> Result<Option<TestRunDB>, sqlx::Error> {
         let test_run = match query_file_as!(
             TestRunDBPartial,
-            "./src/repositories/sql/robot/get_test_run_by_id.sql",
+            "./src/repositories/queries/robot/get_test_run_by_id.sql",
             id
         )
         .fetch_optional(&self.pool)
@@ -182,7 +180,7 @@ impl RobotRepository {
             generator: test_run.generator,
             generated_date: test_run.generated_date,
             schema_version: test_run.schema_version,
-            app_name: test_run.application_name,
+            app_name: "".to_string(),
             app_version: test_run.application_version,
             sha1: test_run.sha1,
             imported_date: Some(test_run.imported_date),
@@ -206,13 +204,12 @@ impl RobotRepository {
 
     pub async fn insert_test_run(&self, test_run: &TestRunDB, project_id: i32) -> Result<i32, sqlx::Error> {
         let result = query_file!(
-            "./src/repositories/sql/robot/insert_test_run.sql",
+            "./src/repositories/queries/robot/insert_test_run.sql",
             project_id,
             test_run.rpa,
             test_run.generator,
             test_run.generated_date,
             test_run.schema_version,
-            test_run.app_name,
             test_run.app_version,
             test_run.sha1
         )
@@ -321,7 +318,7 @@ impl RobotRepository {
     ) -> Result<Vec<TestDB>, sqlx::Error> {
         let tests = query_file_as!(
             TestDBPartial,
-            "./src/repositories/sql/robot/get_tests_by_suite_id.sql",
+            "./src/repositories/queries/robot/get_tests_by_suite_id.sql",
             suite_id
         )
         .fetch_all(&self.pool)
@@ -370,7 +367,7 @@ impl RobotRepository {
     ) -> Result<Vec<StatDB>, sqlx::Error> {
         let statistics = query_file_as!(
             StatDB,
-            "./src/repositories/sql/robot/get_test_run_statistics_by_test_run_id.sql",
+            "./src/repositories/queries/robot/get_test_run_statistics_by_test_run_id.sql",
             test_run_id
         )
         .fetch_all(&self.pool)
@@ -390,7 +387,7 @@ impl RobotRepository {
     ) -> Result<Vec<ErrorDB>, sqlx::Error> {
         let errors = query_file_as!(
             ErrorDB,
-            "./src/repositories/sql/robot/get_test_run_errors_by_test_run_id.sql",
+            "./src/repositories/queries/robot/get_test_run_errors_by_test_run_id.sql",
             test_run_id
         )
         .fetch_all(&self.pool)
@@ -467,7 +464,7 @@ impl RobotRepository {
         };
 
         query_file!(
-            "./src/repositories/sql/robot/insert_suite_keyword.sql",
+            "./src/repositories/queries/robot/insert_suite_keyword.sql",
             suite_id,
             keyword_type.as_str(),
             json_keyword
@@ -561,7 +558,7 @@ impl RobotRepository {
         };
 
         query_file!(
-            "./src/repositories/sql/robot/insert_test_keywords.sql",
+            "./src/repositories/queries/robot/insert_test_keywords.sql",
             test_id,
             json_keywords
         )

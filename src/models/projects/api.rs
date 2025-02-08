@@ -16,7 +16,7 @@ pub struct ProjectOverviewResponse {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TestRunSummary {
-    pub last_test_run_date: String,
+    pub test_run_date: String,
     pub total_tests: i32,
     pub passed_tests: i32,
     pub failed_tests: i32,

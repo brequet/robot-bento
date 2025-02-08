@@ -1,6 +1,6 @@
 use chrono::{NaiveDateTime, ParseResult};
 
-use crate::models::robot::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB};
+use crate::models::robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB};
 use crate::services::{self, parser};
 
 pub fn map_test_run(

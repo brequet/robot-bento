@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use serde::Serialize;
 
-use super::robot::TestRunDB;
+use super::robot_legacy::TestRunDB;
 
 #[derive(Debug, Serialize)]
 pub struct ProjectOverview {

@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use tracing::{info, warn};
 
-use crate::{models::robot::TestRunDB, repositories::robot::RobotRepository};
+use crate::{models::robot_legacy::TestRunDB, repositories::robot::RobotRepository};
 
 use super::{mappers, parser::TestRun};
 
@@ -56,7 +56,7 @@ impl RobotService {
     }
 
     // TODO clean
-    pub async fn get_test_run_data_by_project_ids(
+    pub async fn get_test_runs_data_by_project_ids(
         &self,
         project_ids: &Vec<i32>,
     ) -> Result<Vec<ProjectTestRunData>, Box<dyn std::error::Error>> {
@@ -66,7 +66,7 @@ impl RobotService {
 
         let test_runs_data = self
             .repository
-            .get_test_run_data_by_project_ids(project_ids)
+            .get_test_runs_data_by_project_ids(project_ids)
             .await?
             .iter()
             .map(|test_run_data| {
@@ -75,7 +75,7 @@ impl RobotService {
                     + test_run_data.last_skipped_tests.unwrap_or(0);
                 ProjectTestRunData {
                     project_id: test_run_data.project_id.unwrap(),
-                    application_name: test_run_data.application_name.clone(),
+                    application_name: "".to_string(),
                     application_version: test_run_data.application_version.clone(),
                     test_run_count: test_run_data.test_run_count.or_else(|| Some(0)).unwrap(),
                     last_test_run_date: test_run_data.last_test_run_date,
