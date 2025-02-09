@@ -3,9 +3,10 @@
 	import TestTree from '$lib/components/robot/TestTree.svelte';
 	import { getTestRunById } from '$lib/services/robot';
 	import { onMount } from 'svelte';
-	// import SuiteDetails from '$lib/components/robot/SuiteDetails.svelte';
-	// import TestDetails from '$lib/components/robot/TestDetails.svelte';
+	import SuiteDetails from '$lib/components/robot/SuiteDetails.svelte';
+	import TestDetails from '$lib/components/robot/TestDetails.svelte';
 	import type { ApiSuite, ApiTest, TestRunResponse } from '$lib/types/generated';
+	import * as Resizable from '$lib/components/ui/resizable/index.js';
 
 	let { testRunId }: { testRunId: number } = $props();
 
@@ -14,65 +15,141 @@
 	let selectedSuite: ApiSuite | null = $state(null);
 	let selectedTest: ApiTest | null = $state(null);
 
-	let selectedItem: ApiSuite | ApiTest | null = $state(null);
-	let path = $state<{ name: string; id: number }[]>([]);
-
 	onMount(async () => {
 		testRun = await getTestRunById(testRunId);
+
+		if (!selectedSuite && testRun && testRun.suites.length > 0) {
+			selectedSuite = testRun.suites[0];
+		}
 	});
 
 	function handleSuiteSelect(suite: ApiSuite) {
-		console.log('handleSuiteSelect', suite);
 		selectedTest = null;
 		selectedSuite = suite;
-		// updateBreadcrumbs(suite);
 	}
 
 	function handleTestSelect(test: ApiTest) {
-		console.log('handleTestSelect', test);
+		selectedSuite = null;
 		selectedTest = test;
 	}
 
-	function handleSelect(item: ApiSuite | ApiTest) {
-		console.log('handleSelect', item);
-		selectedItem = item;
-		path = [...path, { name: item.name, id: item.id }];
+	function handleElementSelect(element: ApiSuite | ApiTest) {
+		if ('suites' in element) {
+			handleSuiteSelect(element);
+		} else {
+			handleTestSelect(element);
+		}
 	}
 
-	function navigateBreadcrumb(id: number) {
-		const index = path.findIndex((p) => p.id === id);
-		path = path.slice(0, index + 1);
-		selectedItem = testRun?.suites.find((s) => s.id === id) || null;
+	let breadcrumbs = $derived(buildBreadcrumbs(testRun?.suites ?? [], selectedSuite, selectedTest));
+
+	function buildBreadcrumbs(
+		rootSuites: ApiSuite[],
+		selectedSuite: ApiSuite | null,
+		selectedTest: ApiTest | null
+	): Array<{ name: string; element: ApiSuite | ApiTest }> {
+		const breadcrumbs: Array<{ name: string; element: ApiSuite | ApiTest }> = [];
+
+		if (!selectedSuite && !selectedTest) return breadcrumbs;
+
+		function findPathToSuite(
+			suites: ApiSuite[],
+			targetId: number,
+			currentPath: ApiSuite[] = []
+		): ApiSuite[] | null {
+			for (const suite of suites) {
+				const newPath = [...currentPath, suite];
+
+				if (suite.id === targetId) {
+					return newPath;
+				}
+
+				const foundInSubSuites = findPathToSuite(suite.suites, targetId, newPath);
+				if (foundInSubSuites) return foundInSubSuites;
+			}
+			return null;
+		}
+
+		function findPathToTest(
+			suites: ApiSuite[],
+			testId: number,
+			currentPath: ApiSuite[] = []
+		): { path: ApiSuite[]; test: ApiTest } | null {
+			for (const suite of suites) {
+				const newPath = [...currentPath, suite];
+
+				const test = suite.tests.find((t) => t.id === testId);
+				if (test) {
+					return { path: newPath, test };
+				}
+
+				const foundInSubSuites = findPathToTest(suite.suites, testId, newPath);
+				if (foundInSubSuites) return foundInSubSuites;
+			}
+			return null;
+		}
+
+		if (selectedTest) {
+			const result = findPathToTest(rootSuites, selectedTest.id);
+			if (result) {
+				breadcrumbs.push(
+					...result.path.map((suite) => ({
+						name: suite.name,
+						element: suite
+					}))
+				);
+				breadcrumbs.push({
+					name: result.test.name,
+					element: result.test
+				});
+			}
+		} else if (selectedSuite) {
+			const path = findPathToSuite(rootSuites, selectedSuite.id);
+			if (path) {
+				breadcrumbs.push(
+					...path.map((suite) => ({
+						name: suite.name,
+						element: suite
+					}))
+				);
+			}
+		}
+
+		return breadcrumbs;
 	}
 </script>
 
-<main class="flex h-screen">
-	<!-- Sidebar: Test Suite Tree -->
-	<aside class="w-1/4 overflow-y-auto border-r bg-gray-50 p-4">
-		<h2 class="mb-4 text-lg font-semibold">Test Suites</h2>
-		{#if testRun}
-			<TestTree
-				suites={testRun.suites}
-				{selectedSuite}
-				{selectedTest}
-				{handleSuiteSelect}
-				{handleTestSelect}
-			/>
-		{/if}
-	</aside>
+<main class="h-screen">
+	<Resizable.PaneGroup direction="horizontal" class="  rounded-lg border">
+		<!-- Sidebar: Test Suite Tree -->
+		<Resizable.Pane defaultSize={30}>
+			<div class="flex h-full flex-col overflow-auto whitespace-nowrap p-6">
+				<h2 class="mb-4 text-lg font-semibold">Test Suites</h2>
+				{#if testRun}
+					<TestTree
+						suites={testRun.suites}
+						{selectedSuite}
+						{selectedTest}
+						{handleSuiteSelect}
+						{handleTestSelect}
+					/>
+				{/if}
+			</div>
+		</Resizable.Pane>
+		<Resizable.Handle withHandle />
+		<!-- Main Content -->
+		<Resizable.Pane defaultSize={75}>
+			<div class="flex h-full flex-col space-y-2 overflow-y-auto p-6">
+				<Breadcrumbs {breadcrumbs} {handleElementSelect} />
 
-	<!-- Main Content -->
-	<section class="flex-1 overflow-y-auto p-6">
-		<Breadcrumbs {path} onNavigate={navigateBreadcrumb} />
-
-		{#if selectedItem}
-			{#if 'suites' in selectedItem}
-				suite details
-				<!-- <SuiteDetails suite={selectedItem as ApiSuite} /> -->
-			{:else}
-				test details
-				<!-- <TestDetails test={selectedItem as ApiTest} /> -->
-			{/if}
-		{/if}
-	</section>
+				<div class="flex-1">
+					{#if selectedTest}
+						<TestDetails />
+					{:else if selectedSuite}
+						<SuiteDetails />
+					{/if}
+				</div>
+			</div>
+		</Resizable.Pane>
+	</Resizable.PaneGroup>
 </main>

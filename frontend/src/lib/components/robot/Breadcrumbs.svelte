@@ -1,17 +1,23 @@
 <script lang="ts">
-	let { path, onNavigate } = $props<{
-		path: { name: string; id: number }[];
-		onNavigate: (id: number) => void;
-	}>();
+	import type { ApiSuite, ApiTest } from '$lib/types/generated';
+
+	let {
+		breadcrumbs,
+		handleElementSelect
+	}: {
+		breadcrumbs: Array<{ name: string; element: ApiSuite | ApiTest }>;
+		handleElementSelect: (suite: ApiSuite | ApiTest) => void;
+	} = $props();
 </script>
 
-<nav class="text-sm text-gray-600">
-	{#each path as { name, id }, i}
-		<span class="cursor-pointer hover:underline" onclick={() => onNavigate(id)}>
+<!-- TODO: can use shadcn breadcrumb component -->
+<div class="text-muted-foreground flex gap-2">
+	{#each breadcrumbs as { name, element }, i}
+		<button class="hover:text-primary" onclick={() => handleElementSelect(element)}>
 			{name}
-		</span>
-		{#if i < path.length - 1}
-			<span class="mx-1">/</span>
+		</button>
+		{#if i < breadcrumbs.length - 1}
+			<span>/</span>
 		{/if}
 	{/each}
-</nav>
+</div>
