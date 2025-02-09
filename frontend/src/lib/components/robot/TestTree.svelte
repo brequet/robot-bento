@@ -24,7 +24,6 @@
 	let expandedSuites = $state(getFailingSuiteIds(suites));
 
 	function selectSuite(suite: ApiSuite) {
-		toggleSuite(null, suite);
 		handleSuiteSelect(suite);
 	}
 

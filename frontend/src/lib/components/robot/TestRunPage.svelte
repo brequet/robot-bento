@@ -5,7 +5,7 @@
 	import TestTree from '$lib/components/robot/TestTree.svelte';
 	import * as Resizable from '$lib/components/ui/resizable/index.js';
 	import { getTestRunById } from '$lib/services/robot';
-	import type { ApiSuite, ApiTest, TestRunResponse } from '$lib/types/generated';
+	import type { ApiStatistic, ApiSuite, ApiTest, TestRunResponse } from '$lib/types/generated';
 	import { onMount } from 'svelte';
 
 	let { testRunId }: { testRunId: number } = $props();
@@ -14,6 +14,23 @@
 
 	let selectedSuite: ApiSuite | null = $state(null);
 	let selectedTest: ApiTest | null = $state(null);
+
+	let idToStats: Map<string, ApiStatistic> = $derived.by(() => {
+		if (!testRun) {
+			return new Map<string, ApiStatistic>();
+		}
+
+		return testRun.statistics
+			.filter((stats) => stats.statType === 'suite')
+			.reduce((map, stat) => {
+				map.set(stat.identifier ?? '', stat);
+				return map;
+			}, new Map<string, ApiStatistic>());
+	});
+
+	let selectedSuiteStats = $derived.by(() => {
+		return selectedSuite !== null ? idToStats.get(selectedSuite.identifier) : undefined;
+	});
 
 	onMount(async () => {
 		testRun = await getTestRunById(testRunId);
@@ -124,7 +141,7 @@
 		<!-- Sidebar: Test Suite Tree -->
 		<Resizable.Pane defaultSize={30}>
 			<div class="flex h-full flex-col overflow-auto whitespace-nowrap">
-				<h2 class="mb-4 text-lg font-semibold">Test Suites</h2>
+				<h2 class="p-4 text-lg font-semibold">Test Suites</h2>
 				{#if testRun}
 					<TestTree
 						suites={testRun.suites}
@@ -139,14 +156,14 @@
 		<Resizable.Handle withHandle />
 		<!-- Main Content -->
 		<Resizable.Pane defaultSize={75}>
-			<div class="flex h-full flex-col space-y-2 overflow-y-auto p-6">
+			<div class="flex h-full flex-col space-y-2 overflow-y-auto p-4">
 				<Breadcrumbs {breadcrumbs} {handleElementSelect} />
 
 				<div class="flex-1">
 					{#if selectedTest}
-						<TestDetails />
+						<TestDetails test={selectedTest} />
 					{:else if selectedSuite}
-						<SuiteDetails />
+						<SuiteDetails suite={selectedSuite} stats={selectedSuiteStats} />
 					{/if}
 				</div>
 			</div>
