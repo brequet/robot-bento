@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { ApiSuite, ApiTest } from '$lib/types/generated';
-	import { ChevronRight, ChevronDown } from 'lucide-svelte';
-	import Self from './TestTree.svelte';
+	import { ChevronDown, ChevronRight } from 'lucide-svelte';
 	import StatusBadge from './StatusBadge.svelte';
+	import Self from './TestTree.svelte';
 
 	let {
 		suites,
@@ -21,7 +21,7 @@
 	} = $props();
 
 	// TODO: init expandedSuites for failing suites and tests
-	let expandedSuites = $state(new Set<number>());
+	let expandedSuites = $state(getFailingSuiteIds(suites));
 
 	function selectSuite(suite: ApiSuite) {
 		toggleSuite(null, suite);
@@ -40,6 +40,23 @@
 
 		expandedSuites = newSet;
 	}
+
+	// Initial tree must expand failing suites
+	function getFailingSuiteIds(suites: ApiSuite[]): Set<number> {
+		let failingSuiteIds = new Set<number>();
+
+		for (const suite of suites) {
+			if (suite.status === 'FAIL') {
+				failingSuiteIds.add(suite.id);
+
+				for (const subSuiteId of getFailingSuiteIds(suite.suites)) {
+					failingSuiteIds.add(subSuiteId);
+				}
+			}
+		}
+
+		return failingSuiteIds;
+	}
 </script>
 
 <ul class="space-y-1">
@@ -49,7 +66,7 @@
 			<div
 				class="hover:bg-muted flex cursor-pointer items-center gap-2 rounded p-1"
 				class:bg-muted={selectedSuite?.id === suite.id}
-				style="padding-left: {level * 1.5}rem"
+				style="margin-left: {level * 1.5}rem"
 				onclick={() => selectSuite(suite)}
 			>
 				<button
@@ -88,7 +105,7 @@
 							<li
 								class="hover:bg-muted flex cursor-pointer items-center gap-2 rounded p-1"
 								class:bg-muted={selectedTest?.id === test.id}
-								style="padding-left: {(level + 1) * 1.5}rem"
+								style="margin-left: {(level + 2) * 1.5}rem"
 								onclick={() => handleTestSelect(test)}
 							>
 								<StatusBadge status={test.status} type="TEST" />

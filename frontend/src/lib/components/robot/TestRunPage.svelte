@@ -1,12 +1,12 @@
 <script lang="ts">
 	import Breadcrumbs from '$lib/components/robot/Breadcrumbs.svelte';
-	import TestTree from '$lib/components/robot/TestTree.svelte';
-	import { getTestRunById } from '$lib/services/robot';
-	import { onMount } from 'svelte';
 	import SuiteDetails from '$lib/components/robot/SuiteDetails.svelte';
 	import TestDetails from '$lib/components/robot/TestDetails.svelte';
-	import type { ApiSuite, ApiTest, TestRunResponse } from '$lib/types/generated';
+	import TestTree from '$lib/components/robot/TestTree.svelte';
 	import * as Resizable from '$lib/components/ui/resizable/index.js';
+	import { getTestRunById } from '$lib/services/robot';
+	import type { ApiSuite, ApiTest, TestRunResponse } from '$lib/types/generated';
+	import { onMount } from 'svelte';
 
 	let { testRunId }: { testRunId: number } = $props();
 
@@ -123,7 +123,7 @@
 	<Resizable.PaneGroup direction="horizontal" class="  rounded-lg border">
 		<!-- Sidebar: Test Suite Tree -->
 		<Resizable.Pane defaultSize={30}>
-			<div class="flex h-full flex-col overflow-auto whitespace-nowrap p-6">
+			<div class="flex h-full flex-col overflow-auto whitespace-nowrap">
 				<h2 class="mb-4 text-lg font-semibold">Test Suites</h2>
 				{#if testRun}
 					<TestTree
