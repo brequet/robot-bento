@@ -1,7 +1,7 @@
 use tracing::{info, warn};
 
 use crate::{
-    models::{robot::domain::ProjectTestRunSummary, robot_legacy::TestRunDB},
+    models::{self, robot::domain::ProjectTestRunSummary},
     repositories::robot::RobotRepository,
 };
 
@@ -70,15 +70,10 @@ impl RobotService {
         Ok(summaries)
     }
 
-    pub async fn get_all_test_runs(&self) -> Result<Vec<TestRunDB>, Box<dyn std::error::Error>> {
-        let test_runs = self.repository.get_all_test_runs().await?;
-        Ok(test_runs)
-    }
-
     pub async fn get_test_run_by_id(
         &self,
         id: i32,
-    ) -> Result<Option<TestRunDB>, Box<dyn std::error::Error>> {
+    ) -> Result<Option<models::robot::domain::SavedTestRun>, Box<dyn std::error::Error>> {
         let test_run = self.repository.get_test_run_by_id(id).await?;
         Ok(test_run)
     }

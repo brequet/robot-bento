@@ -83,7 +83,7 @@ impl RobotHandler {
         let test_run = robot_service.get_test_run_by_id(path.into_inner()).await;
 
         match test_run {
-            Ok(Some(test_run)) => Ok(HttpResponse::Ok().json(test_run)),
+            Ok(Some(test_run)) => Ok(HttpResponse::Ok().json(test_run.to_response())),
             Ok(None) => Ok(HttpResponse::NotFound().finish()),
             Err(e) => {
                 error!("Error getting test run: {:?}", e);

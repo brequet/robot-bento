@@ -5,16 +5,16 @@ use sqlx::FromRow;
 use crate::services::parser::{self};
 
 #[derive(Debug, Serialize, FromRow)]
-pub struct TestRunDB {
+pub struct TestRunDBLegacy {
     pub id: Option<i32>,
     pub rpa: bool,
     pub generator: String,
     pub generated_date: NaiveDateTime,
     pub schema_version: String,
     pub imported_date: Option<NaiveDateTime>,
-    pub suites: Vec<SuiteDB>,
-    pub statistics: Vec<StatDB>,
-    pub errors: Vec<ErrorDB>,
+    pub suites: Vec<SuiteDBLegacy>,
+    pub statistics: Vec<StatDBLegacy>,
+    pub errors: Vec<ErrorDBLegacy>,
     pub sha1: String,
     // Metadata
     pub app_name: String,
@@ -22,7 +22,7 @@ pub struct TestRunDB {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SuiteDB {
+pub struct SuiteDBLegacy {
     pub id: Option<i32>,
     pub name: String,
     pub source: Option<String>,
@@ -32,13 +32,13 @@ pub struct SuiteDB {
     pub doc: Option<String>,
     pub identifier: String,
     pub setup_keyword: Option<parser::Keyword>,
-    pub suites: Vec<SuiteDB>,
-    pub tests: Vec<TestDB>,
+    pub suites: Vec<SuiteDBLegacy>,
+    pub tests: Vec<TestDBLegacy>,
     pub teardown_keyword: Option<parser::Keyword>,
 }
 
 #[derive(Debug, Serialize)]
-pub struct TestDB {
+pub struct TestDBLegacy {
     pub id: Option<i32>,
     pub name: String,
     pub line: i32,
@@ -53,7 +53,7 @@ pub struct TestDB {
 }
 
 #[derive(Debug, Serialize)]
-pub struct StatDB {
+pub struct StatDBLegacy {
     pub id: Option<i32>,
     pub stat_type: StatTypeDB,
     pub pass_count: i32,
@@ -73,7 +73,7 @@ pub enum StatTypeDB {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ErrorDB {
+pub struct ErrorDBLegacy {
     pub id: Option<i32>,
     pub timestamp: NaiveDateTime,
     pub level: String,

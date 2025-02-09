@@ -1,45 +1,10 @@
+use std::collections::HashMap;
+
 use crate::{
-    models::{robot::{db::ProjectTestSummaryDB, domain::ProjectTestRunSummary}, robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB}},
+    models::{self, robot::{db::{ErrorDB, ProjectTestSummaryDB, StatisticDB, SuiteDB, TestDB}, domain::{ProjectTestRunSummary, SavedTestRun, TestRunError, TestRunStatistic, TestRunSuite, TestRunTest}}, robot_legacy::{ErrorDBLegacy, StatDBLegacy, SuiteDBLegacy, TestDBLegacy, TestRunDBLegacy}},
     services::parser::{self, Keyword}};
-use chrono::NaiveDateTime;
-use sqlx::{query_file, query_file_as, query_scalar, PgPool};
-
-#[derive(sqlx::FromRow)]
-struct TestRunDBPartial {
-    pub id: Option<i32>,
-    pub rpa: bool,
-    pub generator: String,
-    pub generated_date: NaiveDateTime,
-    pub schema_version: String,
-    pub application_version: String,
-    pub sha1: String,
-    pub imported_date: NaiveDateTime,
-}
-
-#[derive(sqlx::FromRow)]
-struct SuiteDBPartial {
-    pub id: Option<i32>,
-    pub name: String,
-    pub source: Option<String>,
-    pub status: String,
-    pub start_time: NaiveDateTime,
-    pub end_time: NaiveDateTime,
-    pub doc: Option<String>,
-    pub identifier: String,
-}
-
-#[derive(sqlx::FromRow)]
-pub struct TestDBPartial {
-    pub id: Option<i32>,
-    pub name: String,
-    pub line: i32,
-    pub identifier: String,
-    pub status: String,
-    pub start_time: NaiveDateTime,
-    pub end_time: NaiveDateTime,
-    pub doc: Option<String>,
-    pub timeout: Option<String>,
-}
+use sqlx::{query_as, query_file, query_file_as, query_scalar, PgPool};
+use crate::models::robot::db::StatisticTypeDB;
 
 enum SuiteKeywordType {
     Setup,
@@ -98,110 +63,41 @@ impl RobotRepository {
         })
     }
 
-    pub async fn get_all_test_runs(&self) -> Result<Vec<TestRunDB>, sqlx::Error> {
-        let test_runs = query_file_as!(
-            TestRunDBPartial,
-            "./src/repositories/queries/robot/get_all_test_runs.sql",
-        )
-        .fetch_all(&self.pool)
-        .await
-        .inspect_err(|e| tracing::error!("Query get_all_test_runs failed: {:?}", e))?;
-
-        let mut test_run_dbs = Vec::new();
-        for test_run in test_runs {
-            let suites = self.get_suites_by_test_run_id_and_parent_suite_id( test_run.id.unwrap(), None).await?;
-            let statistics = self.get_test_run_statistics_by_test_run_id( test_run.id.unwrap()).await?;
-            let errors = self.get_test_run_errors_by_test_run_id( test_run.id.unwrap()).await?;
-    
-            test_run_dbs.push({TestRunDB {
-                id: test_run.id,
-                rpa: test_run.rpa,
-                generator: test_run.generator,
-                generated_date: test_run.generated_date,
-                schema_version: test_run.schema_version,
-                app_name: "".to_string(),
-                app_version: test_run.application_version,
-                sha1: test_run.sha1,
-                imported_date: Some(test_run.imported_date),
-                suites,
-                statistics,
-                errors,
-            }})
-        }
-
-        Ok(test_run_dbs)
-    }
-
-    pub async fn get_all_test_runs_by_project_id(&self, project_id: i32) -> Result<Vec<TestRunDB>, sqlx::Error> {
-        let test_runs = query_file_as!(
-            TestRunDBPartial,
-            "./src/repositories/queries/robot/get_all_test_runs_by_project_id.sql",
-            project_id
-        )
-        .fetch_all(&self.pool)
-        .await
-        .inspect_err(|e| tracing::error!("Query get_all_test_runs_by_project_id failed: {:?}", e))?;
-
-        let mut test_run_dbs = Vec::new();
-        for test_run in test_runs {
-            let suites = self.get_suites_by_test_run_id_and_parent_suite_id( test_run.id.unwrap(), None).await?;
-            let statistics = self.get_test_run_statistics_by_test_run_id( test_run.id.unwrap()).await?;
-            let errors = self.get_test_run_errors_by_test_run_id( test_run.id.unwrap()).await?;
-    
-            test_run_dbs.push({TestRunDB {
-                id: test_run.id,
-                rpa: test_run.rpa,
-                generator: test_run.generator,
-                generated_date: test_run.generated_date,
-                schema_version: test_run.schema_version,
-                app_name: "".to_string(),
-                app_version: test_run.application_version,
-                sha1: test_run.sha1,
-                imported_date: Some(test_run.imported_date),
-                suites,
-                statistics,
-                errors,
-            }})
-        }
-
-        Ok(test_run_dbs)
-    }
-    
     pub async fn get_test_run_by_id(
         &self,
         id: i32,
-    ) -> Result<Option<TestRunDB>, sqlx::Error> {
-        let test_run = match query_file_as!(
-            TestRunDBPartial,
-            "./src/repositories/queries/robot/get_test_run_by_id.sql",
+    ) -> Result<Option<SavedTestRun>, sqlx::Error> {
+        let result = query_as!(
+            models::robot::db::TestRunDB,
+            r#"
+            SELECT tr.id,
+                tr.rpa,
+                tr.generator,
+                tr.generated_date,
+                tr.schema_version,
+                tr.application_version,
+                tr.sha1,
+                tr.imported_date
+            FROM test_runs tr
+            WHERE tr.id = $1
+            "#,
             id
         )
         .fetch_optional(&self.pool)
         .await
-        .inspect_err(|e| tracing::error!("Query get_test_run_by_id failed: {:?}", e))?
-        {
-            Some(r) => r,
-            None => return Ok(None),
+        .inspect_err(|e| tracing::error!("Query get_test_run_by_id failed: {:?}", e))?;
+        
+        let test_run = match result {
+            Some(test_run_db) => {
+                let suites = self.get_suites_by_test_run_id_and_parent_suite_id(id, None).await?;
+                let statistics = self.get_test_run_statistics_by_test_run_id(id).await?;
+                let errors = self.get_test_run_errors_by_test_run_id(id).await?;
+                Some(test_run_db.to_test_run(suites, statistics, errors))
+            }
+            None => None,
         };
-
-        let suites = self.get_suites_by_test_run_id_and_parent_suite_id( id, None).await?;
-        let statistics = self.get_test_run_statistics_by_test_run_id( id).await?;
-        let errors = self.get_test_run_errors_by_test_run_id( id).await?;
-
-        Ok(Some(TestRunDB {
-            id: test_run.id,
-            rpa: test_run.rpa,
-            generator: test_run.generator,
-            generated_date: test_run.generated_date,
-            schema_version: test_run.schema_version,
-            app_name: "".to_string(),
-            app_version: test_run.application_version,
-            sha1: test_run.sha1,
-            imported_date: Some(test_run.imported_date),
-            suites,
-            statistics,
-            errors,
-        }))
+        
+        Ok(test_run)
     }
 
     pub async fn is_sha1_already_inserted(&self, sha1: &str) -> Result<bool, sqlx::Error> {
@@ -216,7 +112,7 @@ impl RobotRepository {
         Ok(is_inserted.unwrap_or(true))
     }
 
-    pub async fn insert_test_run(&self, test_run: &TestRunDB, project_id: i32) -> Result<i32, sqlx::Error> {
+    pub async fn insert_test_run(&self, test_run: &TestRunDBLegacy, project_id: i32) -> Result<i32, sqlx::Error> {
         let result = query_file!(
             "./src/repositories/queries/robot/insert_test_run.sql",
             project_id,
@@ -244,7 +140,7 @@ impl RobotRepository {
         &self,
         test_run_id: i32,
         parent_suite_id: Option<i32>,
-    ) -> Result<Vec<SuiteDB>, sqlx::Error> {
+    ) -> Result<Vec<TestRunSuite>, sqlx::Error> {
         Box::pin(async move {
 
         let mut query_builder = sqlx::QueryBuilder::new(
@@ -272,33 +168,21 @@ impl RobotRepository {
 
         query_builder.push(" ORDER BY s.start_time ASC");
         
-        let suites: Vec<SuiteDBPartial> = query_builder
+        let suites: Vec<SuiteDB> = query_builder
         .build_query_as()
         .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_suites_by_test_run_id_and_parent_suite_id failed: {:?}", e))?;
 
-        let mut suite_dbs = Vec::new();
+        let mut suite_db_list = Vec::new();
         for suite in suites {
-            let (setup_keyword, teardown_keyword) = self.get_suite_keywords_by_suite_id( suite.id.unwrap()).await?;
-            let suites = self.get_suites_by_test_run_id_and_parent_suite_id( test_run_id, suite.id).await?;
-            let tests = self.get_tests_by_suite_id( suite.id.unwrap()).await?;
-            suite_dbs.push(SuiteDB {
-                id: suite.id,
-                name: suite.name.clone(),
-                source: suite.source.clone(),
-                status: suite.status.clone(),
-                start_time: suite.start_time,
-                end_time: suite.end_time,
-                doc: suite.doc.clone(),
-                identifier: suite.identifier.clone(),
-                setup_keyword,
-                suites,
-                tests,
-                teardown_keyword
-            });
+            // let (setup_keyword, teardown_keyword) = self.get_suite_keywords_by_suite_id( suite.id.unwrap()).await?;
+            let suites = self.get_suites_by_test_run_id_and_parent_suite_id( test_run_id, Some(suite.id)).await?;
+            let tests = self.get_tests_by_suite_id( suite.id).await?;
+
+            suite_db_list.push(suite.to_test_run_suite(suites, tests));
         }
-        Ok(suite_dbs)
+        Ok(suite_db_list)
     }).await
     }
 
@@ -329,59 +213,69 @@ impl RobotRepository {
     async fn get_tests_by_suite_id(
         &self,
         suite_id: i32,
-    ) -> Result<Vec<TestDB>, sqlx::Error> {
-        let tests = query_file_as!(
-            TestDBPartial,
-            "./src/repositories/queries/robot/get_tests_by_suite_id.sql",
+    ) -> Result<Vec<TestRunTest>, sqlx::Error> {
+        let rows = query_as!(
+            TestDB,
+            r#"--sql
+            SELECT 
+                t.id,
+                t.identifier,
+                t.name,
+                t.status,
+                t.start_time,
+                t.end_time,
+                t.line,
+                t.doc,
+                t.timeout,
+                tt.value as tag
+            FROM tests t
+            LEFT JOIN test_tags tt ON t.id = tt.test_id
+            WHERE t.suite_id = $1
+            ORDER BY t.start_time ASC, tt.value ASC
+            "#,
             suite_id
         )
         .fetch_all(&self.pool)
         .await
         .inspect_err(|e| tracing::error!("Query get_tests_by_suite_id failed: {:?}", e))?;
-
-        let mut tests_dbs = Vec::new();
-        for test in tests {
-            let tags = self.get_tags_by_test_id( test.id.unwrap()).await?;
-            tests_dbs.push(TestDB {
-                id: test.id,
-                name: test.name.clone(),
-                line: test.line,
-                identifier: test.identifier.clone(),
-                status: test.status.clone(),
-                start_time: test.start_time,
-                end_time: test.end_time,
-                doc: test.doc.clone(),
-                timeout: test.timeout.clone(),
-                tags,
-                keywords: Vec::new(), // TODO: option to fill it ? else its too much everytime
-            })
+        
+        let mut tests_map: HashMap<i32, (&TestDB, Vec<String>)> = HashMap::new();
+        
+        for row in &rows {
+            tests_map
+                .entry(row.id)
+                .and_modify(|(_, tags)| {
+                    if let Some(tag) = &row.tag {
+                        tags.push(tag.clone());
+                    }
+                })
+                .or_insert_with(|| (row, row.tag.clone().into_iter().collect()));
         }
 
-     Ok(tests_dbs)
-    }
-
-    async fn get_tags_by_test_id(
-        &self,
-        test_id: i32,
-    ) -> Result<Vec<String>, sqlx::Error> {
-        let tags = query_scalar!(
-            "SELECT value FROM test_tags WHERE test_id = $1",
-            test_id
-        )
-        .fetch_all(&self.pool)
-        .await
-        .inspect_err(|e| tracing::error!("Query get_tags_by_test_id failed: {:?}", e))?;
-
-        Ok(tags)
+        Ok(tests_map
+            .into_values()
+            .map(|(&ref test, tags)| test.to_(tags))
+            .collect())
     }
 
     async fn get_test_run_statistics_by_test_run_id(
         &self,
         test_run_id: i32,
-    ) -> Result<Vec<StatDB>, sqlx::Error> {
-        let statistics = query_file_as!(
-            StatDB,
-            "./src/repositories/queries/robot/get_test_run_statistics_by_test_run_id.sql",
+    ) -> Result<Vec<TestRunStatistic>, sqlx::Error> {
+        query_as!(
+            StatisticDB,
+            r#"--sql
+            SELECT stats.id,
+                stats.stat_type as "stat_type: StatisticTypeDB",
+                stats.pass_count,
+                stats.fail_count,
+                stats.skip_count,
+                stats.identifier,
+                stats.name,
+                stats.text
+            FROM test_run_statistics stats
+            WHERE stats.test_run_id = $1;
+            "#,
             test_run_id
         )
         .fetch_all(&self.pool)
@@ -391,32 +285,39 @@ impl RobotRepository {
                 "Query get_test_run_statistics_by_test_run_id failed: {:?}",
                 e
             )
-        })?;
-        Ok(statistics)
+        })
+        .map(|stats| stats.iter().map(StatisticDB::to_test_run_statistic).collect())
     }
 
     async fn get_test_run_errors_by_test_run_id(
         &self,
         test_run_id: i32,
-    ) -> Result<Vec<ErrorDB>, sqlx::Error> {
-        let errors = query_file_as!(
+    ) -> Result<Vec<TestRunError>, sqlx::Error> {
+        query_as!(
             ErrorDB,
-            "./src/repositories/queries/robot/get_test_run_errors_by_test_run_id.sql",
+            r#"--sql
+            SELECT errors.id,
+                errors.timestamp,
+                errors.level,
+                errors.content
+            FROM test_run_errors errors
+            WHERE errors.test_run_id = $1;
+            "#,
             test_run_id
         )
         .fetch_all(&self.pool)
         .await
         .inspect_err(|e| {
             tracing::error!("Query get_test_run_errors_by_test_run_id failed: {:?}", e)
-        })?;
-        Ok(errors)
+        })
+        .map(|errors| errors.iter().map(ErrorDB::to_test_run_error).collect())
     }
 
     async fn insert_suites(
         &self,
         test_run_id: i32,
         parent_suite_id: Option<i32>,
-        suites: &Vec<SuiteDB>,
+        suites: &Vec<SuiteDBLegacy>,
     ) -> Result<(), sqlx::Error> {
         Box::pin(async move {
             if suites.is_empty() {
@@ -493,7 +394,7 @@ impl RobotRepository {
     async fn insert_tests(
         &self,
         suite_id: i32,
-        tests: &Vec<TestDB>,
+        tests: &Vec<TestDBLegacy>,
     ) -> Result<(), sqlx::Error> {
         if tests.is_empty() {
             return Ok(());
@@ -586,7 +487,7 @@ impl RobotRepository {
     async fn insert_statistics(
         &self,
         test_run_id: i32,
-        statistics: &Vec<StatDB>,
+        statistics: &Vec<StatDBLegacy>,
     ) -> Result<(), sqlx::Error> {
         if statistics.is_empty() {
             return Ok(());
@@ -618,7 +519,7 @@ impl RobotRepository {
     async fn insert_errors(
         &self,
         test_run_id: i32,
-        errors: &Vec<ErrorDB>,
+        errors: &Vec<ErrorDBLegacy>,
     ) -> Result<(), sqlx::Error> {
         if errors.is_empty() {
             return Ok(());

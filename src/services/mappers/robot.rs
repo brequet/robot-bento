@@ -1,13 +1,15 @@
 use chrono::{NaiveDateTime, ParseResult};
 
-use crate::models::robot_legacy::{ErrorDB, StatDB, StatTypeDB, SuiteDB, TestDB, TestRunDB};
+use crate::models::robot_legacy::{
+    ErrorDBLegacy, StatDBLegacy, StatTypeDB, SuiteDBLegacy, TestDBLegacy, TestRunDBLegacy,
+};
 use crate::services::{self, parser};
 
 pub fn map_test_run(
     test_run: &parser::TestRun,
     metadata: &services::robot::TestRunMetadata,
-) -> Result<TestRunDB, chrono::ParseError> {
-    Ok(TestRunDB {
+) -> Result<TestRunDBLegacy, chrono::ParseError> {
+    Ok(TestRunDBLegacy {
         id: None,
         imported_date: None,
         rpa: test_run.rpa,
@@ -23,11 +25,11 @@ pub fn map_test_run(
     })
 }
 
-fn map_suites(suites: &Vec<parser::Suite>) -> Vec<SuiteDB> {
+fn map_suites(suites: &Vec<parser::Suite>) -> Vec<SuiteDBLegacy> {
     suites.iter().map(|suite| map_suite(suite)).collect()
 }
 
-fn map_suite(suite: &parser::Suite) -> SuiteDB {
+fn map_suite(suite: &parser::Suite) -> SuiteDBLegacy {
     let setup_keyword = match &suite.children.first() {
         Some(parser::SuiteChildren::Keyword(keyword)) => Some(keyword.clone()),
         _ => None,
@@ -41,7 +43,7 @@ fn map_suite(suite: &parser::Suite) -> SuiteDB {
         None
     };
 
-    SuiteDB {
+    SuiteDBLegacy {
         id: None,
         name: suite.name.clone(),
         source: suite.source_file.clone(),
@@ -71,8 +73,8 @@ fn map_suite(suite: &parser::Suite) -> SuiteDB {
     }
 }
 
-fn map_test(test: &parser::Test) -> TestDB {
-    TestDB {
+fn map_test(test: &parser::Test) -> TestDBLegacy {
+    TestDBLegacy {
         id: None,
         name: test.name.clone(),
         line: test.line.parse::<i32>().unwrap(),
@@ -87,7 +89,7 @@ fn map_test(test: &parser::Test) -> TestDB {
     }
 }
 
-fn map_statistics(statistics: &parser::Statistics) -> Vec<StatDB> {
+fn map_statistics(statistics: &parser::Statistics) -> Vec<StatDBLegacy> {
     let mut stats = Vec::new();
     stats.push(map_statistic(&statistics.total.stats, StatTypeDB::Total));
     stats.extend(
@@ -107,8 +109,8 @@ fn map_statistics(statistics: &parser::Statistics) -> Vec<StatDB> {
     stats
 }
 
-fn map_statistic(statistic: &parser::StatisticsTag, stat_type: StatTypeDB) -> StatDB {
-    StatDB {
+fn map_statistic(statistic: &parser::StatisticsTag, stat_type: StatTypeDB) -> StatDBLegacy {
+    StatDBLegacy {
         id: None,
         stat_type,
         pass_count: statistic.pass as i32,
@@ -120,7 +122,7 @@ fn map_statistic(statistic: &parser::StatisticsTag, stat_type: StatTypeDB) -> St
     }
 }
 
-fn map_errors(errors: &parser::Errors) -> Vec<ErrorDB> {
+fn map_errors(errors: &parser::Errors) -> Vec<ErrorDBLegacy> {
     errors
         .messages
         .iter()
@@ -128,8 +130,8 @@ fn map_errors(errors: &parser::Errors) -> Vec<ErrorDB> {
         .collect()
 }
 
-fn map_error(error: &parser::Message) -> ErrorDB {
-    ErrorDB {
+fn map_error(error: &parser::Message) -> ErrorDBLegacy {
+    ErrorDBLegacy {
         id: None,
         timestamp: map_timestamp(&error.timestamp).unwrap(),
         level: error.level.clone(),

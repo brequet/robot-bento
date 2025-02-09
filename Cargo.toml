@@ -13,6 +13,7 @@ actix-multipart = "0.7.2"
 actix-web = "4.9.0"
 chrono = { version = "0.4.39", features = ["serde"] }
 dotenv = "0.15.0"
+itertools = "0.14.0"
 mime_guess = "2.0.5"
 quick-xml = { version = "0.37.2", features = ["serialize"] }
 rust-embed = "8.5.0"
