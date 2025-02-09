@@ -10,12 +10,28 @@
 	let { testRunId }: { testRunId: number } = $props();
 
 	let testRun: TestRunResponse | null = $state(null);
+
+	let selectedSuite: ApiSuite | null = $state(null);
+	let selectedTest: ApiTest | null = $state(null);
+
 	let selectedItem: ApiSuite | ApiTest | null = $state(null);
 	let path = $state<{ name: string; id: number }[]>([]);
 
 	onMount(async () => {
 		testRun = await getTestRunById(testRunId);
 	});
+
+	function handleSuiteSelect(suite: ApiSuite) {
+		console.log('handleSuiteSelect', suite);
+		selectedTest = null;
+		selectedSuite = suite;
+		// updateBreadcrumbs(suite);
+	}
+
+	function handleTestSelect(test: ApiTest) {
+		console.log('handleTestSelect', test);
+		selectedTest = test;
+	}
 
 	function handleSelect(item: ApiSuite | ApiTest) {
 		console.log('handleSelect', item);
@@ -35,7 +51,13 @@
 	<aside class="w-1/4 overflow-y-auto border-r bg-gray-50 p-4">
 		<h2 class="mb-4 text-lg font-semibold">Test Suites</h2>
 		{#if testRun}
-			<TestTree suites={testRun.suites} onSelect={handleSelect} />
+			<TestTree
+				suites={testRun.suites}
+				{selectedSuite}
+				{selectedTest}
+				{handleSuiteSelect}
+				{handleTestSelect}
+			/>
 		{/if}
 	</aside>
 
