@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import TestRunProgress from '$lib/components/project/TestRunProgress.svelte';
+	import SuccessRateProgressBar from '$lib/components/shared/SuccessRateProgressBar.svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { formatDate as prettyFormatDate } from '$lib/services/date';
@@ -70,7 +70,7 @@
 										<p class="text-foreground text-sm">{passRate.toFixed(1)}%</p>
 									</div>
 									<div class="mt-2">
-										<TestRunProgress
+										<SuccessRateProgressBar
 											passedCount={lastRun.passedTests}
 											failedCount={lastRun.failedTests}
 											skippedCount={lastRun.skippedTests}
@@ -103,7 +103,7 @@
 											<p class="font-medium">{run.elapsedTime}</p>
 										</div>
 										<div class="text-right">
-											<TestRunProgress
+											<SuccessRateProgressBar
 												passedCount={run.passedTests}
 												failedCount={run.failedTests}
 												skippedCount={run.skippedTests}

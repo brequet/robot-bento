@@ -2,7 +2,7 @@
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { formatDate, formatElapsedTime } from '$lib/services/date';
 	import type { ApiTest } from '$lib/types/generated';
-	import { Clock, FileText, FolderTree } from 'lucide-svelte';
+	import { Clock, FileText, FolderTree, TestTube } from 'lucide-svelte';
 	import StatusBadge from './StatusBadge.svelte';
 
 	let { test }: { test: ApiTest } = $props();
@@ -12,7 +12,7 @@
 	<Card.Header>
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-2">
-				<FolderTree class="text-muted-foreground h-5 w-5" />
+				<TestTube class="text-muted-foreground h-5 w-5" />
 				<Card.Title>{test.name}</Card.Title>
 			</div>
 			<StatusBadge status={test.status} type={'TEST'} />

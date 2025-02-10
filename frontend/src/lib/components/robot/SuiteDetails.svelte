@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button/index.js';
+	import SuccessRateProgressBar from '$lib/components/shared/SuccessRateProgressBar.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { formatDate, formatElapsedTime } from '$lib/services/date';
 	import type { ApiStatistic, ApiSuite } from '$lib/types/generated';
-	import { Clock, Code, FileText, FolderTree } from 'lucide-svelte';
-	import TestRunProgress from '../project/TestRunProgress.svelte';
+	import { Clock, FileText, FolderTree } from 'lucide-svelte';
 	import StatusBadge from './StatusBadge.svelte';
 
 	let { suite, stats }: { suite: ApiSuite; stats: ApiStatistic | undefined } = $props();
@@ -25,7 +24,7 @@
 	<Card.Content>
 		<div class="space-y-6">
 			{#if stats}
-				<TestRunProgress
+				<SuccessRateProgressBar
 					passedCount={stats.passCount}
 					skippedCount={stats.skipCount}
 					failedCount={stats.failCount}
@@ -58,23 +57,13 @@
 				</div>
 			</div>
 
-			{#if suite.source || suite.doc}
-				<div class="flex gap-4">
-					{#if suite.source}
-						<div class="flex items-center gap-2">
-							<Code class="h-4 w-4" />
-							<div class="text-sm">
-								<div class="font-medium">Source</div>
-								<div class="text-muted-foreground">{suite.source}</div>
-							</div>
-						</div>
-					{/if}
-					{#if suite.doc}
-						<Button variant="outline" size="sm" class="flex items-center gap-2">
-							<FileText class="h-4 w-4" />
-							Documentation
-						</Button>
-					{/if}
+			{#if suite.doc}
+				<div class="flex items-center gap-2">
+					<FileText class="h-4 w-4 min-w-4" />
+					<div class="text-sm">
+						<div class="font-medium">Documentation</div>
+						<div class="text-muted-foreground">{suite.doc}</div>
+					</div>
 				</div>
 			{/if}
 		</div>

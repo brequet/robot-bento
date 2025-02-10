@@ -1,7 +1,8 @@
 <script lang="ts">
+	import SuccessRateProgressBar from '$lib/components/shared/SuccessRateProgressBar.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { formatDate } from '$lib/services/date';
 	import type { ProjectOverviewResponse } from '$lib/types/generated';
-	import TestRunProgress from './TestRunProgress.svelte';
 
 	export let project: ProjectOverviewResponse;
 
@@ -29,15 +30,16 @@
 			<div class="space-y-1 text-sm text-gray-500">
 				Last Run:
 				{#if project.lastTestRunSummary}
-					<span class="font-medium"
-						>{new Date(project.lastTestRunSummary.testRunDate).toLocaleDateString()}</span
-					>
+					<span class="font-medium">
+						{formatDate(project.lastTestRunSummary.testRunDate)}
+						<br />(ran for {project.lastTestRunSummary.elapsedTime})
+					</span>
 					<div>
 						<div class="flex justify-between text-xs text-gray-600">
 							<span>Status</span>
 							<span>{pass_rate}% Passed</span>
 						</div>
-						<TestRunProgress
+						<SuccessRateProgressBar
 							passedCount={project.lastTestRunSummary.passedTests}
 							failedCount={project.lastTestRunSummary.failedTests}
 							skippedCount={project.lastTestRunSummary.skippedTests}
