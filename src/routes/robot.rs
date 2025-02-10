@@ -32,7 +32,7 @@ pub struct RobotTestRunMetadata {
 
 #[derive(Debug, MultipartForm)]
 pub struct RobotOuputUploadForm {
-    #[multipart(limit = "500MB")]
+    #[multipart(limit = "1000MB")]
     pub file: TempFile,
     pub metadata: MpJson<RobotTestRunMetadata>,
 }
@@ -112,6 +112,7 @@ impl RobotHandler {
 
         let file_path = form.file.file.path();
 
+        // TODO: check sha1 uniqueness BEFORE parsing...
         match robot_output_parser_service.from_file(file_name, file_path) {
             Ok(test_run) => {
                 let metadata = services::robot::TestRunMetadata {

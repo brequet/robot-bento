@@ -13,11 +13,7 @@ impl FrontendHandler {
     }
 
     async fn serve_frontend(req: HttpRequest) -> impl Responder {
-        let path = if req.path() == "/" {
-            "index.html"
-        } else {
-            &req.path()[1..]
-        };
+        let path = &req.path()[1..];
 
         match FrontendAssets::get(path) {
             Some(content) => {
@@ -26,7 +22,15 @@ impl FrontendHandler {
                     .content_type(mime.as_ref())
                     .body(content.data.into_owned())
             }
-            None => HttpResponse::NotFound().body("404 Not Found"),
+            None => {
+                // Serve index.html for unknown paths to support client-side routing
+                match FrontendAssets::get("index.html") {
+                    Some(index) => HttpResponse::Ok()
+                        .content_type("text/html; charset=utf-8")
+                        .body(index.data.into_owned()),
+                    None => HttpResponse::NotFound().body("404 Not Found"),
+                }
+            }
         }
     }
 }
