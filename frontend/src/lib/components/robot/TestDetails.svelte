@@ -1,8 +1,9 @@
 <script lang="ts">
+	import * as Accordion from '$lib/components/ui/accordion/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { formatDate, formatElapsedTime } from '$lib/services/date';
 	import type { ApiTest } from '$lib/types/generated';
-	import { Clock, FileText, FolderTree, TestTube } from 'lucide-svelte';
+	import { Clock, FileText, TestTube } from 'lucide-svelte';
 	import StatusBadge from './StatusBadge.svelte';
 
 	let { test }: { test: ApiTest } = $props();
@@ -49,13 +50,19 @@
 			</div>
 
 			{#if test.doc}
-				<div class="flex items-center gap-2">
-					<FileText class="h-4 w-4 min-w-4" />
-					<div class="text-sm">
-						<div class="font-medium">Documentation</div>
-						<div class="text-muted-foreground">{test.doc}</div>
-					</div>
-				</div>
+				<Accordion.Root type="single">
+					<Accordion.Item value="item-1">
+						<Accordion.Trigger>
+							<div class="flex flex-row items-center space-x-2">
+								<FileText class="h-4 w-4" />
+								<div class="font-medium">Documentation</div>
+							</div>
+						</Accordion.Trigger>
+						<Accordion.Content>
+							<p class="text-muted-foreground whitespace-pre-wrap text-sm">{test.doc}</p>
+						</Accordion.Content>
+					</Accordion.Item>
+				</Accordion.Root>
 			{/if}
 		</div>
 	</Card.Content>
