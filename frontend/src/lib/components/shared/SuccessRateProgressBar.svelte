@@ -9,11 +9,11 @@
 		skippedCount: number;
 	} = $props();
 
-	let totalCount = passedCount + failedCount + skippedCount;
+	let totalCount = $derived(passedCount + failedCount + skippedCount);
 
-	let passedRate = Math.round((passedCount / totalCount) * 100);
-	let failedRate = Math.round((failedCount / totalCount) * 100);
-	let skippedRate = Math.round((skippedCount / totalCount) * 100);
+	let passedRate = $derived(Math.round((passedCount / totalCount) * 100));
+	let failedRate = $derived(Math.round((failedCount / totalCount) * 100));
+	let skippedRate = $derived(Math.round((skippedCount / totalCount) * 100));
 </script>
 
 <div class="w-full">

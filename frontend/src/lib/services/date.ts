@@ -1,4 +1,4 @@
-export function formatDate(dateString: string) {
+export function formatDate(dateString: string): string {
     const date = new Date(dateString);
     const months = [
         'Jan',
@@ -22,7 +22,7 @@ export function formatDate(dateString: string) {
     return `${month} ${day}, ${year} at ${hours}:${minutes}`;
 }
 
-export const formatElapsedTime = (start: string, end: string) => {
+export const formatElapsedTime = (start: string, end: string): string => {
     const diff = new Date(end).getTime() - new Date(start).getTime();
     const hours = Math.floor(diff / 3600000);
     const minutes = Math.floor((diff % 3600000) / 60000);

@@ -2,12 +2,20 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import Breadcrumbs from '$lib/components/robot/Breadcrumbs.svelte';
+	import ErrorsDetails from '$lib/components/robot/ErrorsDetails.svelte';
 	import SuiteDetails from '$lib/components/robot/SuiteDetails.svelte';
 	import TestDetails from '$lib/components/robot/TestDetails.svelte';
 	import TestTree from '$lib/components/robot/TestTree.svelte';
+	import Badge from '$lib/components/ui/badge/badge.svelte';
 	import * as Resizable from '$lib/components/ui/resizable/index.js';
-	import { getTestRunById } from '$lib/services/robot';
-	import type { ApiStatistic, ApiSuite, ApiTest, TestRunResponse } from '$lib/types/generated';
+	import { findSuiteByIdentifier, findTestByIdentifier, getTestRunById } from '$lib/services/robot';
+	import type {
+		ApiError,
+		ApiStatistic,
+		ApiSuite,
+		ApiTest,
+		TestRunResponse
+	} from '$lib/types/generated';
 	import { onMount } from 'svelte';
 
 	let testRun: TestRunResponse | null = $state(null);
@@ -16,12 +24,26 @@
 	let selectedSuite: ApiSuite | null = $state(null);
 	let selectedTest: ApiTest | null = $state(null);
 
+	type Selection =
+		| { type: 'suite'; suite: ApiSuite }
+		| { type: 'test'; test: ApiTest }
+		| { type: 'errors'; errors: ApiError[] }
+		| null;
+
+	let selected: Selection = $state(null);
+
 	// TODO: scroll to selected test/suite
 	$effect(() => {
-		if (selectedTest !== null) {
-			goto(`?test=${selectedTest.identifier}`);
-		} else if (selectedSuite !== null) {
-			goto(`?suite=${selectedSuite.identifier}`);
+		switch (selected?.type) {
+			case 'suite':
+				goto(`?suite=${selected.suite.identifier}`);
+				break;
+			case 'test':
+				goto(`?test=${selected.test.identifier}`);
+				break;
+			case 'errors':
+				goto(`?errors`);
+				break;
 		}
 	});
 
@@ -39,14 +61,26 @@
 	});
 
 	let selectedSuiteStats = $derived.by(() => {
-		return selectedSuite !== null ? idToStats.get(selectedSuite.identifier) : undefined;
+		console.log(
+			'recomputing stats',
+			selected && selected.type === 'suite',
+			selected?.suite.identifier
+		);
+		return selected && selected.type === 'suite'
+			? idToStats.get(selected.suite.identifier)
+			: undefined;
 	});
 
 	onMount(async () => {
 		testRun = await getTestRunById(Number(page.params.id));
+
+		selected = computeSelection(testRun);
+	});
+
+	function computeSelection(testRun: TestRunResponse | null): Selection | null {
 		if (!testRun) {
 			error = 'Failed to load test run details.';
-			return;
+			return null;
 		}
 
 		let queriedTestIdentifier = page.url.searchParams.get('test');
@@ -54,7 +88,7 @@
 			let test = findTestByIdentifier(testRun.suites, queriedTestIdentifier);
 			if (test) {
 				selectedTest = test;
-				return;
+				return { type: 'test', test };
 			}
 		}
 
@@ -63,23 +97,39 @@
 			let suite = findSuiteByIdentifier(testRun.suites, queriedSuiteIdentifier);
 			if (suite) {
 				selectedSuite = suite;
-				return;
+				return { type: 'suite', suite };
 			}
 		}
 
-		if (!selectedSuite && testRun && testRun.suites.length > 0) {
-			selectedSuite = testRun.suites[0];
+		let queriedErrors = page.url.searchParams.get('errors');
+		if (queriedErrors !== null) {
+			return { type: 'errors', errors: testRun.errors };
 		}
-	});
+
+		if (testRun.suites.length > 0) {
+			selectedSuite = testRun.suites[0];
+			return { type: 'suite', suite: testRun.suites[0] };
+		}
+
+		return null;
+	}
 
 	function handleSuiteSelect(suite: ApiSuite) {
 		selectedTest = null;
 		selectedSuite = suite;
+		selected = { type: 'suite', suite };
 	}
 
 	function handleTestSelect(test: ApiTest) {
 		selectedSuite = null;
 		selectedTest = test;
+		selected = { type: 'test', test };
+	}
+
+	function handleErrorsSelect(errors: ApiError[]) {
+		selectedSuite = null;
+		selectedTest = null;
+		selected = { type: 'errors', errors };
 	}
 
 	function handleElementSelect(element: ApiSuite | ApiTest) {
@@ -166,34 +216,6 @@
 
 		return breadcrumbs;
 	}
-
-	function findTestByIdentifier(suites: ApiSuite[], testIdentifier: string): ApiTest | null {
-		for (const suite of suites) {
-			for (const test of suite.tests) {
-				if (testIdentifier === test.identifier) {
-					return test;
-				}
-			}
-			const foundTest = findTestByIdentifier(suite.suites, testIdentifier);
-			if (foundTest) {
-				return foundTest;
-			}
-		}
-		return null;
-	}
-
-	function findSuiteByIdentifier(suites: ApiSuite[], suiteIdentifier: string): ApiSuite | null {
-		for (const suite of suites) {
-			if (suiteIdentifier === suite.identifier) {
-				return suite;
-			}
-			const foundSuite = findSuiteByIdentifier(suite.suites, suiteIdentifier);
-			if (foundSuite) {
-				return foundSuite;
-			}
-		}
-		return null;
-	}
 </script>
 
 <main class="h-screen">
@@ -201,8 +223,22 @@
 		<!-- Sidebar: Test Suite Tree -->
 		<Resizable.Pane defaultSize={30}>
 			<div class="flex h-full flex-col overflow-auto whitespace-nowrap">
-				<h2 class="p-4 text-lg font-semibold">Test Suites</h2>
+				<div class="flex items-center justify-between p-4">
+					<h2 class="text-lg font-semibold">Test Suites</h2>
+					{#if testRun && testRun.errors.length > 0}
+						<div>
+							<Badge
+								variant="destructive"
+								class="cursor-pointer"
+								onclick={() => handleErrorsSelect(testRun?.errors)}
+							>
+								{testRun.errors.length} errors
+							</Badge>
+						</div>
+					{/if}
+				</div>
 				{#if testRun}
+					<div class="items-center rounded p-1 shadow-sm"></div>
 					<TestTree
 						suites={testRun.suites}
 						{selectedSuite}
@@ -216,14 +252,16 @@
 		<Resizable.Handle withHandle />
 		<!-- Main Content -->
 		<Resizable.Pane defaultSize={75}>
-			<div class="flex h-full flex-col space-y-2 overflow-y-auto p-4">
+			<div class="flex h-full flex-col space-y-2 overflow-y-auto p-3">
 				<Breadcrumbs {breadcrumbs} {handleElementSelect} />
 
 				<div class="flex-1">
-					{#if selectedTest}
-						<TestDetails test={selectedTest} />
-					{:else if selectedSuite}
-						<SuiteDetails suite={selectedSuite} stats={selectedSuiteStats} />
+					{#if selected?.type === 'errors'}
+						<ErrorsDetails errors={selected.errors} />
+					{:else if selected?.type === 'test'}
+						<TestDetails test={selected.test} />
+					{:else if selected?.type === 'suite'}
+						<SuiteDetails suite={selected.suite} stats={selectedSuiteStats} />
 					{/if}
 				</div>
 			</div>
