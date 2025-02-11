@@ -22,7 +22,7 @@
 	</Card.Header>
 
 	<Card.Content>
-		<div class="space-y-6">
+		<div class="space-y-2">
 			<div class="grid grid-cols-3 gap-4">
 				<div class="flex items-center justify-center gap-2">
 					<Clock class="text-muted-foreground h-4 w-4" />

@@ -11,7 +11,7 @@
 </script>
 
 <!-- TODO: can use shadcn breadcrumb component -->
-<div class="text-muted-foreground flex gap-2">
+<div class="text-muted-foreground flex gap-2 text-sm">
 	{#each breadcrumbs as { name, element }, i}
 		<button class="hover:text-primary" onclick={() => handleElementSelect(element)}>
 			{name}

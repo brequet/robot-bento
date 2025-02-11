@@ -22,7 +22,7 @@
 	</Card.Header>
 
 	<Card.Content>
-		<div class="space-y-6">
+		<div class="space-y-2">
 			{#if stats}
 				<SuccessRateProgressBar
 					passedCount={stats.passCount}
