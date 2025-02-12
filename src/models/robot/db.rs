@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use serde_json::Value;
 use sqlx::postgres::types::PgInterval;
 
 use crate::utils;
@@ -50,7 +51,6 @@ pub struct TestRunDB {
     pub generated_date: NaiveDateTime,
     pub schema_version: String,
     pub application_version: String,
-    pub sha1: String,
     pub imported_date: NaiveDateTime,
 }
 
@@ -192,4 +192,9 @@ impl ErrorDB {
             content: self.content.clone(),
         }
     }
+}
+
+#[derive(sqlx::FromRow, Debug)]
+pub struct RawJsonRecord {
+    pub value: Value,
 }

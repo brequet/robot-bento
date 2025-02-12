@@ -2,11 +2,14 @@
 	import * as Accordion from '$lib/components/ui/accordion/index.js';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { formatDate, formatElapsedTime } from '$lib/services/date';
+	import { getTestKeywords } from '$lib/services/robot';
 	import type { ApiTest } from '$lib/types/generated';
 	import { Clock, FileText, TestTube } from 'lucide-svelte';
 	import StatusBadge from './StatusBadge.svelte';
 
 	let { test }: { test: ApiTest } = $props();
+
+	let testKeywordsPromise: any = $derived(getTestKeywords(test.id));
 </script>
 
 <Card.Root class="h-full w-full">
@@ -64,6 +67,12 @@
 					</Accordion.Item>
 				</Accordion.Root>
 			{/if}
+
+			{#await testKeywordsPromise}
+				Loading test keywords..
+			{:then testKeyword}
+				keywords: {JSON.stringify(testKeyword)}
+			{/await}
 		</div>
 	</Card.Content>
 </Card.Root>

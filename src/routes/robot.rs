@@ -73,20 +73,44 @@ impl RobotHandler {
             .app_data(web::Data::new(self.projects_service.clone()))
             .app_data(web::Data::new(self.robot_output_parser_service.clone()))
             .route("/test-runs/{id}", web::get().to(Self::get_test_run))
+            .route(
+                "/tests/{id}/keywords",
+                web::get().to(Self::get_test_keywords),
+            )
             .route("/upload", web::post().to(Self::upload_robot_output))
     }
 
     async fn get_test_run(
         robot_service: web::Data<Arc<RobotService>>,
-        path: web::Path<i32>,
+        test_run_id: web::Path<i32>,
     ) -> Result<HttpResponse, Error> {
-        let test_run = robot_service.get_test_run_by_id(path.into_inner()).await;
+        let test_run = robot_service
+            .get_test_run_by_id(test_run_id.into_inner())
+            .await;
 
         match test_run {
             Ok(Some(test_run)) => Ok(HttpResponse::Ok().json(test_run.to_response())),
             Ok(None) => Ok(HttpResponse::NotFound().finish()),
             Err(e) => {
                 error!("Error getting test run: {:?}", e);
+                Ok(HttpResponse::InternalServerError().finish())
+            }
+        }
+    }
+
+    async fn get_test_keywords(
+        robot_service: web::Data<Arc<RobotService>>,
+        test_id: web::Path<i32>,
+    ) -> Result<HttpResponse, Error> {
+        let keywords = robot_service
+            .get_test_keywords_by_test_id(test_id.into_inner())
+            .await;
+
+        match keywords {
+            Ok(Some(keywords)) => Ok(HttpResponse::Ok().json(keywords)),
+            Ok(None) => Ok(HttpResponse::NotFound().finish()),
+            Err(e) => {
+                error!("Error getting keywords: {:?}", e);
                 Ok(HttpResponse::InternalServerError().finish())
             }
         }

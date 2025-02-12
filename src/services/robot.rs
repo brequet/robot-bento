@@ -1,3 +1,4 @@
+use serde_json::Value;
 use tracing::{info, warn};
 
 use crate::{
@@ -76,5 +77,13 @@ impl RobotService {
     ) -> Result<Option<models::robot::domain::SavedTestRun>, Box<dyn std::error::Error>> {
         let test_run = self.repository.get_test_run_by_id(id).await?;
         Ok(test_run)
+    }
+
+    pub async fn get_test_keywords_by_test_id(
+        &self,
+        id: i32,
+    ) -> Result<Option<Value>, Box<dyn std::error::Error>> {
+        let keywords = self.repository.get_test_keywords_by_test_id(id).await?;
+        Ok(keywords)
     }
 }

@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    models::{self, robot::{db::{ErrorDB, ProjectTestSummaryDB, StatisticDB, SuiteDB, TestDB}, domain::{ProjectTestRunSummary, SavedTestRun, TestRunError, TestRunStatistic, TestRunSuite, TestRunTest}}, robot_legacy::{ErrorDBLegacy, StatDBLegacy, SuiteDBLegacy, TestDBLegacy, TestRunDBLegacy}},
+    models::{self, robot::{db::{ErrorDB, ProjectTestSummaryDB, RawJsonRecord, StatisticDB, SuiteDB, TestDB}, domain::{ProjectTestRunSummary, SavedTestRun, TestRunError, TestRunStatistic, TestRunSuite, TestRunTest}}, robot_legacy::{ErrorDBLegacy, StatDBLegacy, SuiteDBLegacy, TestDBLegacy, TestRunDBLegacy}},
     services::parser::{self, Keyword}};
+use serde_json::Value;
 use sqlx::{query_as, query_file, query_file_as, query_scalar, PgPool};
+use tracing::info;
 use crate::models::robot::db::StatisticTypeDB;
 
 enum SuiteKeywordType {
@@ -76,7 +78,6 @@ impl RobotRepository {
                 tr.generated_date,
                 tr.schema_version,
                 tr.application_version,
-                tr.sha1,
                 tr.imported_date
             FROM test_runs tr
             WHERE tr.id = $1
@@ -136,6 +137,26 @@ impl RobotRepository {
         Ok(test_run_id)
     }
 
+    pub async fn get_test_keywords_by_test_id(
+        &self,
+        test_id: i32
+    ) -> Result<Option<Value>, sqlx::Error> {
+        query_as!(
+            RawJsonRecord,
+            r#"
+                SELECT value
+                FROM test_keywords
+                WHERE test_id = $1
+                LIMIT 1;
+            "#,
+            test_id
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_test_keywords_by_test_id failed: {:?}", e))
+        .map(|raw_json| raw_json.map(|r| r.value))
+    }
+
     async fn get_suites_by_test_run_id_and_parent_suite_id(
         &self,
         test_run_id: i32,
@@ -185,7 +206,7 @@ impl RobotRepository {
         Ok(suite_db_list)
     }).await
     }
-
+    
     async fn get_suite_keywords_by_suite_id(
         &self,
         suite_id: i32
