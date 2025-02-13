@@ -6,6 +6,7 @@
 	import type { ApiTest } from '$lib/types/generated';
 	import { Clock, FileText, TestTube } from 'lucide-svelte';
 	import StatusBadge from './StatusBadge.svelte';
+	import BaseBody from './keywords/BaseBody.svelte';
 
 	let { test }: { test: ApiTest } = $props();
 
@@ -70,8 +71,10 @@
 
 			{#await testKeywordsPromise}
 				Loading test keywords..
-			{:then testKeyword}
-				keywords: {JSON.stringify(testKeyword)}
+			{:then testKeywords}
+				{#each testKeywords as keyword}
+					<BaseBody baseBody={keyword} />
+				{/each}
 			{/await}
 		</div>
 	</Card.Content>

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '$lib/config';
 import type { ApiSuite, ApiTest, TestRunResponse } from '$lib/types/generated';
+import type { RobotBaseBody } from '$lib/types/robot';
 
 
 const ROBOT_BASE_API = `${API_BASE_URL}/robot`;
@@ -15,7 +16,7 @@ export async function getTestRunById(id: number): Promise<TestRunResponse | null
 	}
 }
 
-export async function getTestKeywords(testId: number): Promise<any | null> {
+export async function getTestKeywords(testId: number): Promise<RobotBaseBody[] | null> {
 	try {
 		const response = await fetch(`${ROBOT_BASE_API}/tests/${testId}/keywords`);
 		if (!response.ok) throw new Error('Failed to fetch test keywords');
