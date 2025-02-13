@@ -33,7 +33,7 @@
 </script>
 
 {#if keywordType === 'RobotKeyword'}
-	<Keyword {...baseBody.kw} />
+	<Keyword keyword={baseBody.kw} />
 {:else if keywordType === 'RobotFor'}
 	<For {...baseBody.for} />
 {:else if keywordType === 'RobotWhile'}
