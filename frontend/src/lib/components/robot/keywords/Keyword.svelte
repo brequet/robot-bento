@@ -1,54 +1,38 @@
 <script lang="ts">
-	import StatusBadge from '$lib/components/shared/StatusBadge.svelte';
-	import * as Accordion from '$lib/components/ui/accordion/index.js';
-	import { formatRobotElapsedTime } from '$lib/services/date';
+	import Tags from '$lib/components/robot/base/Tags.svelte';
 	import type { RobotKeyword } from '$lib/types/robot';
-	import BaseBody from './BaseBody.svelte';
-	import Message from './Message.svelte';
+	import Doc from '../base/Doc.svelte';
+	import Keywords from '../base/Keywords.svelte';
+	import Messages from '../base/Messages.svelte';
+	import StatusTime from '../base/StatusTime.svelte';
+	import GenericKeyword from './GenericKeyword.svelte';
 
 	let { keyword }: { keyword: RobotKeyword } = $props();
+
+	function buildKeywordName(keyword: RobotKeyword): string {
+		let result = '';
+		if (keyword.var.length > 0) {
+			result += `${keyword.var.join(', ')} =`;
+		}
+		if (keyword.library) {
+			result += `${keyword.library}.`;
+		}
+		if (keyword.name) {
+			result += keyword.name;
+		}
+		if (keyword.args.length > 0) {
+			result += ` ${keyword.args.join(' ')}`;
+		}
+		return result;
+	}
 </script>
 
-<Accordion.Root type="single">
-	<Accordion.Item value="item-1">
-		<Accordion.Trigger>
-			<div class="flex w-full flex-row items-center justify-between space-x-2">
-				<div class="font-medium">{keyword.name}</div>
-				<div class="flex items-center space-x-2">
-					<div class="text-sm">
-						{formatRobotElapsedTime(keyword.status?.start_time, keyword.status?.end_time)}
-					</div>
-					<StatusBadge status={keyword.status?.status!} text={'KEYWORD'} />
-				</div>
-			</div></Accordion.Trigger
-		>
-		<Accordion.Content>
-			<div class="ml-4 space-y-2 text-base">
-				{#if keyword.doc}
-					<div class="text-muted-foreground whitespace-pre-wrap text-sm">{keyword.doc}</div>
-				{/if}
-				{keyword.status?.start_time}
-				{#if keyword.msg.length > 0}
-					<div class="space-y-1">
-						{#each keyword.msg as message}
-							<Message {message} />
-						{/each}
-					</div>
-				{/if}
-				{#if keyword.keywords.length > 0}
-					<div class="space-y-1">
-						{#each keyword.keywords as subKeyword}
-							<BaseBody baseBody={subKeyword} />
-						{/each}
-					</div>
-				{/if}
-			</div>
-		</Accordion.Content>
-	</Accordion.Item>
-</Accordion.Root>
+<GenericKeyword name={buildKeywordName(keyword)} type={keyword.type_} status={keyword.status}>
+	<Doc doc={keyword.doc} />
+	<StatusTime status={keyword.status} />
+	<Tags tags={keyword.tags} />
 
-<style>
-	.text-muted-foreground {
-		@apply text-gray-500;
-	}
-</style>
+	<Messages messages={keyword.msg} />
+
+	<Keywords keywords={keyword.keywords} />
+</GenericKeyword>

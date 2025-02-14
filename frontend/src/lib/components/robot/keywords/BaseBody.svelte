@@ -41,7 +41,7 @@
 {:else if keywordType === 'RobotGroup'}
 	<Group {...baseBody.group} />
 {:else if keywordType === 'RobotIf'}
-	<If {...baseBody.if} />
+	<If ifKw={baseBody.if} />
 {:else if keywordType === 'RobotTry'}
 	<Try {...baseBody.try} />
 {:else if keywordType === 'RobotVar'}

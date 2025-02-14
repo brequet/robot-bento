@@ -7,7 +7,7 @@
 
 <Badge
 	class={clsx(
-		'px-2 ',
+		'px-2 font-semibold text-white',
 		status === 'FAIL' && 'bg-red-400 hover:bg-red-500',
 		status === 'PASS' && 'bg-green-400 hover:bg-green-500',
 		status === 'SKIP' && 'bg-yellow-400 hover:bg-yellow-500',

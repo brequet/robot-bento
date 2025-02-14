@@ -54,7 +54,7 @@ export interface RobotGroup {
 }
 
 export interface RobotIfBranch {
-    type: string;
+    type_: string;
     condition?: string;
     children: RobotBaseBody[];
     status: RobotStatus;
@@ -71,11 +71,13 @@ export interface RobotMessage {
     value: string;
 }
 
+type RobotKeywordType = 'SETUP' | 'TEARDOWN' | undefined;
+
 export interface RobotKeyword {
     name: string;
     owner?: string;
     library?: string;
-    type?: string;
+    type_?: RobotKeywordType;
     msg: RobotMessage[];
     keywords: RobotBaseBody[];
     var: string[];
