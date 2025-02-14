@@ -1,7 +1,7 @@
 <script lang="ts">
+	import StatusBadge from '$lib/components/shared/StatusBadge.svelte';
 	import type { ApiSuite, ApiTest } from '$lib/types/generated';
 	import { ChevronDown, ChevronRight } from 'lucide-svelte';
-	import StatusBadge from './StatusBadge.svelte';
 	import Self from './TestTree.svelte';
 
 	let {
@@ -80,7 +80,7 @@
 						{/if}
 					{/if}
 				</button>
-				<StatusBadge status={suite.status} type="SUITE" />
+				<StatusBadge status={suite.status} text="SUITE" />
 				<span class="ml-0 flex-1">
 					{suite.name}
 				</span>
@@ -107,7 +107,7 @@
 								style="margin-left: {(level + 2) * 1.5}rem"
 								onclick={() => handleTestSelect(test)}
 							>
-								<StatusBadge status={test.status} type="TEST" />
+								<StatusBadge status={test.status} text="TEST" />
 								<span class="flex-1">{test.name}</span>
 							</li>
 						{/each}

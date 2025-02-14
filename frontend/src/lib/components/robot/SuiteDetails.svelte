@@ -4,7 +4,7 @@
 	import { formatDate, formatElapsedTime } from '$lib/services/date';
 	import type { ApiStatistic, ApiSuite } from '$lib/types/generated';
 	import { Clock, FileText, FolderTree } from 'lucide-svelte';
-	import StatusBadge from './StatusBadge.svelte';
+	import StatusBadge from '../shared/StatusBadge.svelte';
 
 	let { suite, stats }: { suite: ApiSuite; stats: ApiStatistic | undefined } = $props();
 </script>
@@ -16,7 +16,7 @@
 				<FolderTree class="text-muted-foreground h-5 w-5" />
 				<Card.Title>{suite.name}</Card.Title>
 			</div>
-			<StatusBadge status={suite.status} type={'SUITE'} />
+			<StatusBadge status={suite.status} text={'SUITE'} />
 		</div>
 		<Card.Description>ID: {suite.identifier}</Card.Description>
 	</Card.Header>

@@ -13,8 +13,8 @@ export type RobotBaseBody =
 
 export interface RobotStatus {
     status: string;
-    startTime: string;
-    endTime: string;
+    start_time: string;
+    end_time: string;
 }
 
 export interface RobotBreak {

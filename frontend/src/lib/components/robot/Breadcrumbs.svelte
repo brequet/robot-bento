@@ -11,13 +11,13 @@
 </script>
 
 <!-- TODO: can use shadcn breadcrumb component -->
-<div class="text-muted-foreground flex gap-2 text-sm">
+<div class="text-muted-foreground flex text-sm">
 	{#each breadcrumbs as { name, element }, i}
 		<button class="hover:text-primary" onclick={() => handleElementSelect(element)}>
 			{name}
 		</button>
 		{#if i < breadcrumbs.length - 1}
-			<span>/</span>
+			<span>.</span>
 		{/if}
 	{/each}
 </div>

@@ -5,7 +5,7 @@
 	import { getTestKeywords } from '$lib/services/robot';
 	import type { ApiTest } from '$lib/types/generated';
 	import { Clock, FileText, TestTube } from 'lucide-svelte';
-	import StatusBadge from './StatusBadge.svelte';
+	import StatusBadge from '../shared/StatusBadge.svelte';
 	import BaseBody from './keywords/BaseBody.svelte';
 
 	let { test }: { test: ApiTest } = $props();
@@ -20,7 +20,7 @@
 				<TestTube class="text-muted-foreground h-5 w-5" />
 				<Card.Title>{test.name}</Card.Title>
 			</div>
-			<StatusBadge status={test.status} type={'TEST'} />
+			<StatusBadge status={test.status} text={'TEST'} />
 		</div>
 		<Card.Description>ID: {test.identifier}</Card.Description>
 	</Card.Header>
