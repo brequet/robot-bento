@@ -35,23 +35,23 @@
 {#if keywordType === 'RobotKeyword'}
 	<Keyword keyword={baseBody.kw} />
 {:else if keywordType === 'RobotFor'}
-	<For {...baseBody.for} />
+	<For />
 {:else if keywordType === 'RobotWhile'}
-	<While {...baseBody.while} />
+	<While />
 {:else if keywordType === 'RobotGroup'}
-	<Group {...baseBody.group} />
+	<Group />
 {:else if keywordType === 'RobotIf'}
 	<If ifKw={baseBody.if} />
 {:else if keywordType === 'RobotTry'}
-	<Try {...baseBody.try} />
+	<Try />
 {:else if keywordType === 'RobotVar'}
-	<Var {...baseBody.variable} />
+	<Var />
 {:else if keywordType === 'RobotReturn'}
-	<Return {...baseBody.return} />
+	<Return returnKw={baseBody.return} />
 {:else if keywordType === 'RobotContinue'}
-	<Continue {...baseBody.continue} />
+	<Continue />
 {:else if keywordType === 'RobotBreak'}
-	<Break {...baseBody.break} />
+	<Break />
 {:else if keywordType === 'RobotMessage'}
-	<Message {...baseBody.message} />
+	<Message />
 {/if}
