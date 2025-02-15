@@ -74,6 +74,10 @@ impl RobotHandler {
             .app_data(web::Data::new(self.robot_output_parser_service.clone()))
             .route("/test-runs/{id}", web::get().to(Self::get_test_run))
             .route(
+                "/suites/{id}/keywords",
+                web::get().to(Self::get_suite_keywords),
+            )
+            .route(
                 "/tests/{id}/keywords",
                 web::get().to(Self::get_test_keywords),
             )
@@ -93,6 +97,24 @@ impl RobotHandler {
             Ok(None) => Ok(HttpResponse::NotFound().finish()),
             Err(e) => {
                 error!("Error getting test run: {:?}", e);
+                Ok(HttpResponse::InternalServerError().finish())
+            }
+        }
+    }
+
+    async fn get_suite_keywords(
+        robot_service: web::Data<Arc<RobotService>>,
+        suite_id: web::Path<i32>,
+    ) -> Result<HttpResponse, Error> {
+        let keywords = robot_service
+            .get_suite_keywords_by_suite_id(suite_id.into_inner())
+            .await;
+
+        match keywords {
+            Ok(Some(keywords)) => Ok(HttpResponse::Ok().json(keywords.to_api())),
+            Ok(None) => Ok(HttpResponse::NotFound().finish()),
+            Err(e) => {
+                error!("Error getting keywords: {:?}", e);
                 Ok(HttpResponse::InternalServerError().finish())
             }
         }

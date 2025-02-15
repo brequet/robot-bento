@@ -10,7 +10,7 @@
 
 	let { test }: { test: ApiTest } = $props();
 
-	let testKeywordsPromise: any = $derived(getTestKeywords(test.id));
+	let testKeywordsPromise = $derived(getTestKeywords(test.id));
 </script>
 
 <Card.Root class="h-full w-full">
@@ -74,11 +74,15 @@
 
 				<LoaderCircle class="animate-spin" />
 			{:then testKeywords}
-				<div class="space-y-1">
-					{#each testKeywords as keyword}
-						<BaseBody baseBody={keyword} />
-					{/each}
-				</div>
+				{#if testKeywords && testKeywords.length > 0}
+					<div class="space-y-1">
+						{#each testKeywords as keyword}
+							<BaseBody baseBody={keyword} />
+						{/each}
+					</div>
+				{:else}
+					<div>No keywords found</div>
+				{/if}
 			{/await}
 		</div>
 	</Card.Content>

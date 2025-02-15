@@ -1,3 +1,10 @@
+
+
+export interface ApiSuiteKeywords {
+    setupKeyword?: RobotKeyword;
+    teardownKeyword?: RobotKeyword;
+}
+
 export type RobotBaseBody =
     | { kw: RobotKeyword }
     | { for: RobotFor }

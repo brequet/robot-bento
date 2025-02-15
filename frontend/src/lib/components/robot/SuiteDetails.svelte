@@ -2,11 +2,15 @@
 	import SuccessRateProgressBar from '$lib/components/shared/SuccessRateProgressBar.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { formatDate, formatElapsedTime } from '$lib/services/date';
+	import { getSuiteKeywords } from '$lib/services/robot';
 	import type { ApiStatistic, ApiSuite } from '$lib/types/generated';
-	import { Clock, FileText, FolderTree } from 'lucide-svelte';
+	import { Clock, FileText, FolderTree, LoaderCircle } from 'lucide-svelte';
 	import StatusBadge from '../shared/StatusBadge.svelte';
+	import Keyword from './keywords/Keyword.svelte';
 
 	let { suite, stats }: { suite: ApiSuite; stats: ApiStatistic | undefined } = $props();
+
+	let suiteKeywordsPromise = $derived(getSuiteKeywords(suite.id));
 </script>
 
 <Card.Root class="h-full w-full">
@@ -66,6 +70,25 @@
 					</div>
 				</div>
 			{/if}
+
+			{#await suiteKeywordsPromise}
+				Loading suite keywords..
+
+				<LoaderCircle class="animate-spin" />
+			{:then suiteKeywords}
+				{#if suiteKeywords}
+					<div class="space-y-1">
+						{#if suiteKeywords.setupKeyword}
+							<Keyword keyword={suiteKeywords.setupKeyword} />
+						{/if}
+						{#if suiteKeywords.teardownKeyword}
+							<Keyword keyword={suiteKeywords.teardownKeyword} />
+						{/if}
+					</div>
+				{:else}
+					<div>No keywords found</div>
+				{/if}
+			{/await}
 		</div>
 	</Card.Content>
 </Card.Root>

@@ -1,11 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    models::{self, robot::{db::{ErrorDB, ProjectTestSummaryDB, RawJsonRecord, StatisticDB, SuiteDB, TestDB}, domain::{ProjectTestRunSummary, SavedTestRun, TestRunError, TestRunStatistic, TestRunSuite, TestRunTest}}, robot_legacy::{ErrorDBLegacy, StatDBLegacy, SuiteDBLegacy, TestDBLegacy, TestRunDBLegacy}},
-    services::parser::{self, Keyword}};
+    models::{self, robot::{db::{ErrorDB, ProjectTestSummaryDB, RawJsonRecord, StatisticDB, SuiteDB, SuiteKeywordRecord, TestDB}, domain::{ProjectTestRunSummary, SavedTestRun, SuiteKeywords, TestRunError, TestRunStatistic, TestRunSuite, TestRunTest}}, robot_legacy::{ErrorDBLegacy, StatDBLegacy, SuiteDBLegacy, TestDBLegacy, TestRunDBLegacy}},
+    services::parser::{self}};
 use serde_json::Value;
 use sqlx::{query_as, query_file, query_file_as, query_scalar, PgPool};
-use tracing::info;
 use crate::models::robot::db::StatisticTypeDB;
 
 enum SuiteKeywordType {
@@ -136,6 +135,38 @@ impl RobotRepository {
 
         Ok(test_run_id)
     }
+    
+    pub async fn get_suite_keywords_by_suite_id(
+        &self,
+        suite_id: i32
+    ) -> Result<Option<SuiteKeywords>, sqlx::Error> {
+        let keywords = query_as!(
+            SuiteKeywordRecord,
+            r#"--sql
+            SELECT type as keyword_type,
+                  value
+            FROM suite_keywords
+            WHERE suite_id = $1
+            "#,
+            suite_id
+        )
+        .fetch_all(&self.pool)
+        .await
+        .inspect_err(|e| tracing::error!("Query get_suite_keywords_by_suite_id failed: {:?}", e))?;
+
+        if keywords.is_empty() {
+            return Ok(None);
+        }
+    
+        let map = keywords
+            .into_iter()
+            .map(|k| (k.keyword_type, k.value))
+            .collect::<HashMap<_, _>>();
+    
+        Ok(Some(SuiteKeywords {
+            keywords: Arc::new(map),
+        }))
+    }
 
     pub async fn get_test_keywords_by_test_id(
         &self,
@@ -143,7 +174,7 @@ impl RobotRepository {
     ) -> Result<Option<Value>, sqlx::Error> {
         query_as!(
             RawJsonRecord,
-            r#"
+            r#"--sql
                 SELECT value
                 FROM test_keywords
                 WHERE test_id = $1
@@ -205,30 +236,6 @@ impl RobotRepository {
         }
         Ok(suite_db_list)
     }).await
-    }
-    
-    async fn get_suite_keywords_by_suite_id(
-        &self,
-        suite_id: i32
-    ) -> Result<(Option<parser::Keyword>, Option<parser::Keyword>), sqlx::Error> {
-        let keywords = sqlx::query!(
-            "SELECT type as keyword_type, value as keyword_value FROM suite_keywords WHERE suite_id = $1",
-            suite_id
-        )
-        .fetch_all(&self.pool)
-        .await
-        .inspect_err(|e| tracing::error!("Query get_suite_keywords_by_suite_id failed: {:?}", e))?;
-
-        Ok((
-            keywords
-                .iter()
-                .find(|k| k.keyword_type == "setup")
-                .map(|k| serde_json::from_value::<Keyword>(k.keyword_value.clone()).unwrap()),
-            keywords
-                .iter()
-                .find(|k| k.keyword_type == "teardown")
-                .map(|k| serde_json::from_value::<Keyword>(k.keyword_value.clone()).unwrap())
-        ))
     }
 
     async fn get_tests_by_suite_id(

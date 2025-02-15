@@ -1,4 +1,5 @@
 use serde::Serialize;
+use serde_json::Value;
 use typeshare::typeshare;
 
 use super::domain::StatisticType;
@@ -92,4 +93,12 @@ pub struct ApiError {
     pub timestamp: String,
     pub level: String,
     pub content: String,
+}
+
+#[typeshare]
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiSuiteKeywords<'a> {
+    pub setup_keyword: Option<&'a Value>,
+    pub teardown_keyword: Option<&'a Value>,
 }

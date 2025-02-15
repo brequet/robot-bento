@@ -195,6 +195,12 @@ impl ErrorDB {
 }
 
 #[derive(sqlx::FromRow, Debug)]
+pub struct SuiteKeywordRecord {
+    pub keyword_type: String,
+    pub value: Value,
+}
+
+#[derive(sqlx::FromRow, Debug)]
 pub struct RawJsonRecord {
     pub value: Value,
 }

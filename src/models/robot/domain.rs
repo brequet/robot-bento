@@ -1,9 +1,12 @@
+use std::{collections::HashMap, sync::Arc};
+
 use chrono::{Duration, NaiveDateTime};
+use serde_json::Value;
 
 use crate::{models::projects::api::ApiTestRunSummary, utils};
 
 use super::{
-    api::{ApiError, ApiStatistic, ApiSuite, ApiTest, TestRunResponse},
+    api::{ApiError, ApiStatistic, ApiSuite, ApiSuiteKeywords, ApiTest, TestRunResponse},
     db::StatisticTypeDB,
 };
 
@@ -187,6 +190,27 @@ impl TestRunError {
             timestamp: utils::date::format_datetime(self.timestamp),
             level: self.level.clone(),
             content: self.content.clone(),
+        }
+    }
+}
+
+pub struct SuiteKeywords {
+    pub keywords: Arc<HashMap<String, Value>>,
+}
+
+impl SuiteKeywords {
+    pub fn setup_keyword(&self) -> Option<&Value> {
+        self.keywords.get("setup")
+    }
+
+    pub fn teardown_keyword(&self) -> Option<&Value> {
+        self.keywords.get("teardown")
+    }
+
+    pub fn to_api(&self) -> ApiSuiteKeywords<'_> {
+        ApiSuiteKeywords {
+            setup_keyword: self.setup_keyword(),
+            teardown_keyword: self.teardown_keyword(),
         }
     }
 }

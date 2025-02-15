@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '$lib/config';
-import type { ApiSuite, ApiTest, TestRunResponse } from '$lib/types/generated';
+import type { ApiSuite, ApiTest, ApiSuiteKeywords as RobotSuiteKeywords, TestRunResponse } from '$lib/types/generated';
 import type { RobotBaseBody } from '$lib/types/robot';
 
 
@@ -12,6 +12,17 @@ export async function getTestRunById(id: number): Promise<TestRunResponse | null
 		return await response.json();
 	} catch (error) {
 		console.error('Error fetching robot test run:', error);
+		return null;
+	}
+}
+
+export async function getSuiteKeywords(suiteId: number): Promise<RobotSuiteKeywords | null> {
+	try {
+		const response = await fetch(`${ROBOT_BASE_API}/suites/${suiteId}/keywords`);
+		if (!response.ok) throw new Error('Failed to fetch suites keywords');
+		return await response.json();
+	} catch (error) {
+		console.error('Error fetching suites keywords:', error);
 		return null;
 	}
 }
