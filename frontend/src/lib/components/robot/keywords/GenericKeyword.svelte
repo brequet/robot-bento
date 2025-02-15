@@ -20,7 +20,11 @@
 	} = $props();
 </script>
 
-<Accordion.Root type="single" class="rounded-lg border p-2 text-sm">
+<Accordion.Root
+	type="single"
+	class="rounded-lg border p-2 text-sm"
+	value={status && status.status === 'FAIL' ? 'item-1' : undefined}
+>
 	<Accordion.Item value="item-1" class="border-b-0">
 		<Accordion.Trigger class="py-2 ">
 			<div class="flex w-full flex-row justify-between space-x-2">
