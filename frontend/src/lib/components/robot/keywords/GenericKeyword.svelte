@@ -3,32 +3,42 @@
 	import * as Accordion from '$lib/components/ui/accordion/index.js';
 	import { formatRobotElapsedTime } from '$lib/services/date';
 	import type { RobotStatus } from '$lib/types/robot';
+	import type { Snippet } from 'svelte';
 
 	let {
 		name,
+		markupName,
 		type,
 		status,
 		children
 	}: {
-		name: string;
-		type: string | undefined;
-		status: RobotStatus | undefined;
-		children: () => any;
+		name?: string;
+		markupName?: Snippet;
+		type?: string;
+		status?: RobotStatus;
+		children: Snippet;
 	} = $props();
 </script>
 
 <Accordion.Root type="single" class="rounded-lg border p-2 text-sm">
 	<Accordion.Item value="item-1" class="border-b-0">
-		<Accordion.Trigger class="py-2">
-			<div class="flex w-full flex-row items-center justify-between space-x-2">
-				<span class="text-left font-medium">{name}</span>
+		<Accordion.Trigger class="py-2 ">
+			<div class="flex w-full flex-row justify-between space-x-2">
+				<div class="flex space-x-2 no-underline">
+					{#if status}
+						<StatusBadge status={status!.status} text={type ?? 'KEYWORD'} />
+					{/if}
+
+					{#if markupName}
+						{@render markupName()}
+					{:else}
+						<span class="text-left font-medium">{name}</span>
+					{/if}
+				</div>
 				{#if status}
-					<div class="flex items-center space-x-2">
-						<span>
-							{formatRobotElapsedTime(status.start_time, status.end_time)}
-						</span>
-						<StatusBadge status={status.status} text={type ?? 'KEYWORD'} />
-					</div>
+					<span>
+						{formatRobotElapsedTime(status.start_time, status.end_time)}
+					</span>
 				{/if}
 			</div>
 		</Accordion.Trigger>

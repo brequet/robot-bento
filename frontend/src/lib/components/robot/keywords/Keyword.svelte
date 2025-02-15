@@ -8,26 +8,26 @@
 	import GenericKeyword from './GenericKeyword.svelte';
 
 	let { keyword }: { keyword: RobotKeyword } = $props();
-
-	function buildKeywordName(keyword: RobotKeyword): string {
-		let result = '';
-		if (keyword.var.length > 0) {
-			result += `${keyword.var.join(', ')} =`;
-		}
-		if (keyword.library) {
-			result += `${keyword.library}.`;
-		}
-		if (keyword.name) {
-			result += keyword.name;
-		}
-		if (keyword.args.length > 0) {
-			result += ` ${keyword.args.join(' ')}`;
-		}
-		return result;
-	}
 </script>
 
-<GenericKeyword name={buildKeywordName(keyword)} type={keyword.type_} status={keyword.status}>
+<GenericKeyword type={keyword.type_} status={keyword.status}>
+	{#snippet markupName()}
+		<div class="text-left">
+			{#if keyword.var.length > 0}
+				<span>{keyword.var.join(', ')} =</span>
+			{/if}
+			{#if keyword.library}
+				<span class="text-xs font-medium">{keyword.library}.</span>
+			{/if}
+			{#if keyword.name}
+				<span class="font-semibold">{keyword.name}</span>
+			{/if}
+			{#if keyword.args.length > 0}
+				<span>{keyword.args.join(' ')}</span>
+			{/if}
+		</div>
+	{/snippet}
+
 	<Doc doc={keyword.doc} />
 	<StatusTime status={keyword.status} />
 	<Tags tags={keyword.tags} />

@@ -4,7 +4,7 @@
 	import { formatDate, formatElapsedTime } from '$lib/services/date';
 	import { getTestKeywords } from '$lib/services/robot';
 	import type { ApiTest } from '$lib/types/generated';
-	import { Clock, FileText, TestTube } from 'lucide-svelte';
+	import { Clock, FileText, LoaderCircle, TestTube } from 'lucide-svelte';
 	import StatusBadge from '../shared/StatusBadge.svelte';
 	import BaseBody from './keywords/BaseBody.svelte';
 
@@ -71,10 +71,14 @@
 
 			{#await testKeywordsPromise}
 				Loading test keywords..
+
+				<LoaderCircle class="animate-spin" />
 			{:then testKeywords}
-				{#each testKeywords as keyword}
-					<BaseBody baseBody={keyword} />
-				{/each}
+				<div class="space-y-1">
+					{#each testKeywords as keyword}
+						<BaseBody baseBody={keyword} />
+					{/each}
+				</div>
 			{/await}
 		</div>
 	</Card.Content>

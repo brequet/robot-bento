@@ -5,7 +5,7 @@
 	let { message }: { message: RobotMessage } = $props();
 </script>
 
-<li class="flex flex-col gap-1.5 rounded-lg border p-4">
+<li class="flex flex-col gap-1.5 p-4">
 	<div class="flex items-start justify-between gap-4">
 		<span class="text-muted-foreground font-mono text-sm">
 			{message.timestamp}

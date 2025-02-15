@@ -58,6 +58,7 @@
 	}
 </script>
 
+<!-- TODO: search input -->
 <ul class="space-y-1">
 	{#each suites as suite}
 		<li>

@@ -12,6 +12,15 @@
 		type={branch.type_}
 		status={branch.status}
 	>
+		{#snippet markupName()}
+			<div class="text-left">
+				<span>{branch.type_}</span>
+				{#if branch.condition}
+					<span class="font-semibold">{branch.condition}</span>
+				{/if}
+			</div>
+		{/snippet}
+
 		<Keywords keywords={branch.children} />
 	</GenericKeyword>
 {/each}
