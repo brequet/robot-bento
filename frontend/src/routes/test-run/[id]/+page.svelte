@@ -61,11 +61,6 @@
 	});
 
 	let selectedSuiteStats = $derived.by(() => {
-		console.log(
-			'recomputing stats',
-			selected && selected.type === 'suite',
-			selected?.suite.identifier
-		);
 		return selected && selected.type === 'suite'
 			? idToStats.get(selected.suite.identifier)
 			: undefined;

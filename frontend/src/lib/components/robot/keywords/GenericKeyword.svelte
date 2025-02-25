@@ -18,15 +18,18 @@
 		status?: RobotStatus;
 		children: Snippet;
 	} = $props();
+
+	let isOpen = $state(status && status.status === 'FAIL');
 </script>
 
 <Accordion.Root
 	type="single"
 	class="rounded-lg border p-2 text-sm"
 	value={status && status.status === 'FAIL' ? 'item-1' : undefined}
+	onValueChange={(value) => (isOpen = value === 'item-1')}
 >
 	<Accordion.Item value="item-1" class="border-b-0">
-		<Accordion.Trigger class="py-2 ">
+		<Accordion.Trigger class="py-2">
 			<div class="flex w-full flex-row justify-between space-x-2">
 				<div class="flex space-x-2 no-underline">
 					{#if status}
@@ -47,9 +50,11 @@
 			</div>
 		</Accordion.Trigger>
 		<Accordion.Content>
-			<div class="ml-2 space-y-1 text-base">
-				{@render children?.()}
-			</div>
+			{#if isOpen}
+				<div class="ml-2 space-y-1 text-base">
+					{@render children?.()}
+				</div>
+			{/if}
 		</Accordion.Content>
 	</Accordion.Item>
 </Accordion.Root>
