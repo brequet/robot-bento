@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { RobotMessage } from '$lib/types/robot';
-	import Message from '../keywords/Message.svelte';
+	import Message from '../Message.svelte';
 
 	let { messages }: { messages: RobotMessage[] } = $props();
 </script>

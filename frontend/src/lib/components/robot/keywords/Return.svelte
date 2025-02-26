@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { RobotReturn } from '$lib/types/robot';
-	import StatusTime from '../base/StatusTime.svelte';
+	import StatusTime from './base/StatusTime.svelte';
 	import GenericKeyword from './GenericKeyword.svelte';
 
 	let { returnKw }: { returnKw: RobotReturn } = $props();

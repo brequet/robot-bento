@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { RobotBaseBody } from '$lib/types/robot';
-	import BaseBody from '../keywords/BaseBody.svelte';
+	import BaseBody from '../baseBody.svelte';
 
 	let { keywords }: { keywords: RobotBaseBody[] } = $props();
 </script>

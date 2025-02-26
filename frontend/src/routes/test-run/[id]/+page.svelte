@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import Breadcrumbs from '$lib/components/robot/Breadcrumbs.svelte';
 	import ErrorsDetails from '$lib/components/robot/ErrorsDetails.svelte';
+	import NavigationFooter from '$lib/components/robot/NavigationFooter.svelte';
 	import SuiteDetails from '$lib/components/robot/SuiteDetails.svelte';
 	import TestDetails from '$lib/components/robot/TestDetails.svelte';
 	import TestTree from '$lib/components/robot/TestTree.svelte';
@@ -246,8 +247,8 @@
 		</Resizable.Pane>
 		<Resizable.Handle withHandle />
 		<!-- Main Content -->
-		<Resizable.Pane defaultSize={75}>
-			<div class="flex h-full flex-col space-y-2 overflow-y-auto p-3">
+		<Resizable.Pane defaultSize={75} class="flex flex-col">
+			<div class="flex flex-1 flex-col space-y-2 overflow-y-auto p-3">
 				<Breadcrumbs {breadcrumbs} {handleElementSelect} />
 
 				<div class="flex-1">
@@ -260,6 +261,8 @@
 					{/if}
 				</div>
 			</div>
+
+			<NavigationFooter />
 		</Resizable.Pane>
 	</Resizable.PaneGroup>
 </main>

@@ -1,10 +1,10 @@
 <script lang="ts">
-	import Tags from '$lib/components/robot/base/Tags.svelte';
 	import type { RobotKeyword } from '$lib/types/robot';
-	import Doc from '../base/Doc.svelte';
-	import Keywords from '../base/Keywords.svelte';
-	import Messages from '../base/Messages.svelte';
-	import StatusTime from '../base/StatusTime.svelte';
+	import Tags from './base/Tags.svelte';
+	import Doc from './base/Doc.svelte';
+	import Keywords from './base/Keywords.svelte';
+	import Messages from './base/Messages.svelte';
+	import StatusTime from './base/StatusTime.svelte';
 	import GenericKeyword from './GenericKeyword.svelte';
 
 	let { keyword }: { keyword: RobotKeyword } = $props();

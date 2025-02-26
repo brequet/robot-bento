@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { RobotIf } from '$lib/types/robot';
-	import Keywords from '../base/Keywords.svelte';
+	import Keywords from './base/Keywords.svelte';
 	import GenericKeyword from './GenericKeyword.svelte';
 
 	let { ifKw }: { ifKw: RobotIf } = $props();
