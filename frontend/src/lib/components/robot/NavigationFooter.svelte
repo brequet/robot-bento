@@ -28,13 +28,13 @@
 
 	function goToPreviousFailedTest() {
 		if (isPreviousTestAvailable) {
-			goToTestByIdentifier(failedTestIdentifiers[selectedTestIndex - 1]);
+			goToTestByIdentifier(failedTestIdentifiers[lastNonNullSelectedIndex - 1]);
 		}
 	}
 
 	function goToNextFailedTest() {
 		if (isNextTestAvailable) {
-			goToTestByIdentifier(failedTestIdentifiers[selectedTestIndex + 1]);
+			goToTestByIdentifier(failedTestIdentifiers[lastNonNullSelectedIndex + 1]);
 		}
 	}
 </script>
