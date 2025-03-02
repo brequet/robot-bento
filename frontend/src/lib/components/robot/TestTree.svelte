@@ -20,7 +20,6 @@
 		level?: number;
 	} = $props();
 
-	// TODO: init expandedSuites for failing suites and tests
 	let expandedSuites = $state(getFailingSuiteIds(suites));
 
 	function selectSuite(suite: ApiSuite) {
@@ -40,7 +39,6 @@
 		expandedSuites = newSet;
 	}
 
-	// Initial tree must expand failing suites
 	function getFailingSuiteIds(suites: ApiSuite[]): Set<number> {
 		let failingSuiteIds = new Set<number>();
 
@@ -56,6 +54,17 @@
 
 		return failingSuiteIds;
 	}
+
+	$effect(() => {
+		if (selectedSuite) {
+			const el = document.getElementById(selectedSuite.identifier);
+			el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+		if (selectedTest) {
+			const el = document.getElementById(selectedTest.identifier);
+			el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+	});
 </script>
 
 <!-- TODO: search input -->
@@ -68,6 +77,7 @@
 				class:bg-muted={selectedSuite?.id === suite.id}
 				style="margin-left: {level * 1.5}rem"
 				onclick={() => selectSuite(suite)}
+				id={suite.identifier}
 			>
 				<button
 					class="hover:bg-muted-foreground/20 rounded p-1"
@@ -107,6 +117,7 @@
 								class:bg-muted={selectedTest?.id === test.id}
 								style="margin-left: {(level + 2) * 1.5}rem"
 								onclick={() => handleTestSelect(test)}
+								id={test.identifier}
 							>
 								<StatusBadge status={test.status} text="TEST" />
 								<span class="flex-1">{test.name}</span>

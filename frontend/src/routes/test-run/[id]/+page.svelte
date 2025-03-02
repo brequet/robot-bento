@@ -38,7 +38,6 @@
 
 	let selected: Selection = $state(null);
 
-	// TODO: scroll to selected test/suite
 	$effect(() => {
 		switch (selected?.type) {
 			case 'suite':
@@ -240,7 +239,7 @@
 							<Badge
 								variant="destructive"
 								class="cursor-pointer"
-								onclick={() => handleErrorsSelect(testRun?.errors)}
+								onclick={() => handleErrorsSelect(testRun?.errors ?? [])}
 							>
 								{testRun.errors.length} errors
 							</Badge>
