@@ -1,6 +1,6 @@
 import { API_BASE_URL } from '$lib/config';
-import type { ApiSuite, ApiTest, ApiSuiteKeywords as RobotSuiteKeywords, TestRunResponse } from '$lib/types/generated';
-import type { RobotBaseBody } from '$lib/types/robot';
+import type { ApiSuite, ApiTest, TestRunResponse } from '$lib/types/generated';
+import type { ApiSuiteKeywords, RobotBaseBody } from '$lib/types/robot';
 
 
 const ROBOT_BASE_API = `${API_BASE_URL}/robot`;
@@ -16,7 +16,7 @@ export async function getTestRunById(id: number): Promise<TestRunResponse | null
 	}
 }
 
-export async function getSuiteKeywords(suiteId: number): Promise<RobotSuiteKeywords | null> {
+export async function getSuiteKeywords(suiteId: number): Promise<ApiSuiteKeywords | null> {
 	try {
 		const response = await fetch(`${ROBOT_BASE_API}/suites/${suiteId}/keywords`);
 		if (!response.ok) throw new Error('Failed to fetch suites keywords');
@@ -36,6 +36,19 @@ export async function getTestKeywords(testId: number): Promise<RobotBaseBody[] |
 		console.error('Error fetching test keywords:', error);
 		return null;
 	}
+}
+
+export function getFailedTestIdentifiers(suites: ApiSuite[]): string[] {
+	const failedTestIds: string[] = [];
+	for (const suite of suites) {
+		for (const test of suite.tests) {
+			if (test.status === 'FAIL') {
+				failedTestIds.push(test.identifier);
+			}
+		}
+		failedTestIds.push(...getFailedTestIdentifiers(suite.suites));
+	}
+	return failedTestIds;
 }
 
 export function findTestByIdentifier(suites: ApiSuite[], testIdentifier: string): ApiTest | null {

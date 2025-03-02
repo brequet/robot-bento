@@ -9,7 +9,12 @@
 	import TestTree from '$lib/components/robot/TestTree.svelte';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
 	import * as Resizable from '$lib/components/ui/resizable/index.js';
-	import { findSuiteByIdentifier, findTestByIdentifier, getTestRunById } from '$lib/services/robot';
+	import {
+		findSuiteByIdentifier,
+		findTestByIdentifier,
+		getFailedTestIdentifiers,
+		getTestRunById
+	} from '$lib/services/robot';
 	import type {
 		ApiError,
 		ApiStatistic,
@@ -66,6 +71,8 @@
 			? idToStats.get(selected.suite.identifier)
 			: undefined;
 	});
+
+	let failedTestIdentifiers = $derived(getFailedTestIdentifiers(testRun?.suites ?? []));
 
 	onMount(async () => {
 		testRun = await getTestRunById(Number(page.params.id));
@@ -212,6 +219,13 @@
 
 		return breadcrumbs;
 	}
+
+	function goToTestByIdentifier(identifier: string) {
+		const test = findTestByIdentifier(testRun?.suites ?? [], identifier);
+		if (test) {
+			handleTestSelect(test);
+		}
+	}
 </script>
 
 <main class="h-screen">
@@ -262,7 +276,7 @@
 				</div>
 			</div>
 
-			<NavigationFooter />
+			<NavigationFooter {failedTestIdentifiers} {selectedTest} {goToTestByIdentifier} />
 		</Resizable.Pane>
 	</Resizable.PaneGroup>
 </main>
