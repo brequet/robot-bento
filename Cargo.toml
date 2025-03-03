@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = ["xtask"]
+members = [".", "xtask", "report-fetcher"]
 
 [dependencies]
 actix-cors = "0.7.0"
