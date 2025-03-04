@@ -40,19 +40,15 @@ enum Commands {
     },
     /// Upload robot data to the API
     Upload {
-        /// Path to the folder containing output.xml
         #[arg(long)]
         folder_path: PathBuf,
 
-        /// Application name
         #[arg(long)]
         app_name: String,
 
-        /// Application version
         #[arg(long)]
         app_version: String,
 
-        /// API URL (default: http://localhost:5325/api/robot/upload)
         #[arg(long, default_value = "http://localhost:5325/api/robot/upload")]
         api_url: String,
     },

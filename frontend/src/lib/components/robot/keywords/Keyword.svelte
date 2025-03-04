@@ -8,6 +8,7 @@
 	import GenericKeyword from './GenericKeyword.svelte';
 
 	let { keyword }: { keyword: RobotKeyword } = $props();
+	// TODO: if "Wait Until" type, prevent child expanding expect last.
 </script>
 
 <GenericKeyword type={keyword.type_} status={keyword.status}>

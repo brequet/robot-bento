@@ -108,11 +108,6 @@
 			return { type: 'errors', errors: testRun.errors };
 		}
 
-		if (testRun.suites.length > 0) {
-			selectedSuite = testRun.suites[0];
-			return { type: 'suite', suite: testRun.suites[0] };
-		}
-
 		return null;
 	}
 
@@ -225,6 +220,13 @@
 			handleTestSelect(test);
 		}
 	}
+
+	function goToTestRunSection() {
+		goto(`/test-run/${testRun?.id}`);
+		selected = null;
+		selectedSuite = null;
+		selectedTest = null;
+	}
 </script>
 
 <main class="h-screen">
@@ -232,6 +234,12 @@
 		<!-- Sidebar: Test Suite Tree -->
 		<Resizable.Pane defaultSize={30}>
 			<div class="flex h-full flex-col overflow-auto whitespace-nowrap">
+				<div class="flex items-center justify-between p-4">
+					<!-- TODO: go back to project page -->
+					<button class="flex-1 text-left text-xl font-semibold" onclick={goToTestRunSection}>
+						Test run {testRun?.id}
+					</button>
+				</div>
 				<div class="flex items-center justify-between p-4">
 					<h2 class="text-lg font-semibold">Test Suites</h2>
 					{#if testRun && testRun.errors.length > 0}
@@ -247,7 +255,6 @@
 					{/if}
 				</div>
 				{#if testRun}
-					<div class="items-center rounded p-1 shadow-sm"></div>
 					<TestTree
 						suites={testRun.suites}
 						{selectedSuite}
@@ -265,7 +272,9 @@
 				<Breadcrumbs {breadcrumbs} {handleElementSelect} />
 
 				<div class="flex-1">
-					{#if selected?.type === 'errors'}
+					{#if selected == null}
+						home page mageul
+					{:else if selected?.type === 'errors'}
 						<ErrorsDetails errors={selected.errors} />
 					{:else if selected?.type === 'test'}
 						<TestDetails test={selected.test} />
