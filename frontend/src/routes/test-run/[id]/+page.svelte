@@ -5,6 +5,7 @@
 	import ErrorsDetails from '$lib/components/robot/ErrorsDetails.svelte';
 	import NavigationFooter from '$lib/components/robot/NavigationFooter.svelte';
 	import SuiteDetails from '$lib/components/robot/SuiteDetails.svelte';
+	import TestRunDetails from '$lib/components/robot/test-run/TestRunDetails.svelte';
 	import TestDetails from '$lib/components/robot/TestDetails.svelte';
 	import TestTree from '$lib/components/robot/TestTree.svelte';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
@@ -272,8 +273,8 @@
 				<Breadcrumbs {breadcrumbs} {handleElementSelect} />
 
 				<div class="flex-1">
-					{#if selected == null}
-						home page mageul
+					{#if selected == null && testRun != null}
+						<TestRunDetails {testRun} />
 					{:else if selected?.type === 'errors'}
 						<ErrorsDetails errors={selected.errors} />
 					{:else if selected?.type === 'test'}
@@ -284,7 +285,9 @@
 				</div>
 			</div>
 
-			<NavigationFooter {failedTestIdentifiers} {selectedTest} {goToTestByIdentifier} />
+			{#if selected != null}
+				<NavigationFooter {failedTestIdentifiers} {selectedTest} {goToTestByIdentifier} />
+			{/if}
 		</Resizable.Pane>
 	</Resizable.PaneGroup>
 </main>
