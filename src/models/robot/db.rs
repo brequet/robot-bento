@@ -112,15 +112,15 @@ impl SuiteDB {
 #[derive(sqlx::FromRow)]
 pub struct TestDB {
     pub id: i32,
-    pub name: String,
-    pub line: i32,
     pub identifier: String,
+    pub name: String,
     pub status: String,
     pub start_time: NaiveDateTime,
     pub end_time: NaiveDateTime,
+    pub line: i32,
     pub doc: Option<String>,
     pub timeout: Option<String>,
-    pub tag: Option<String>, // pub keywords: Vec<parser::BaseBody>,
+    pub tag: Option<String>,
 }
 
 impl TestDB {

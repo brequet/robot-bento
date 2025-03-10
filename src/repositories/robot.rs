@@ -5,6 +5,7 @@ use crate::{
     services::parser::{self}};
 use serde_json::Value;
 use sqlx::{query_as, query_file, query_file_as, query_scalar, PgPool};
+use tracing::info;
 use crate::models::robot::db::StatisticTypeDB;
 
 enum SuiteKeywordType {
@@ -255,7 +256,7 @@ impl RobotRepository {
                 t.line,
                 t.doc,
                 t.timeout,
-                tt.value as tag
+                tt.value as "tag?"
             FROM tests t
             LEFT JOIN test_tags tt ON t.id = tt.test_id
             WHERE t.suite_id = $1
@@ -265,7 +266,7 @@ impl RobotRepository {
         )
         .fetch_all(&self.pool)
         .await
-        .inspect_err(|e| tracing::error!("Query get_tests_by_suite_id failed: {:?}", e))?;
+        .inspect_err(|e| tracing::error!("Query get_tests_by_suite_id failed for suite_id={}: {:?}", suite_id, e))?;
         
         let mut tests_map: HashMap<i32, (&TestDB, Vec<String>)> = HashMap::new();
         
