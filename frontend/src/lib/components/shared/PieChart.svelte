@@ -19,7 +19,7 @@
 
 	onMount(() => {
 		chart = new Chart(chartElement, {
-			type: 'pie',
+			type: 'doughnut',
 			data: {
 				labels,
 				datasets: [

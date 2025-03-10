@@ -234,15 +234,13 @@
 	<Resizable.PaneGroup direction="horizontal" class="  rounded-lg border">
 		<!-- Sidebar: Test Suite Tree -->
 		<Resizable.Pane defaultSize={30}>
-			<div class="flex h-full flex-col overflow-auto whitespace-nowrap">
-				<div class="flex items-center justify-between p-4">
+			<div class="flex h-full flex-col whitespace-nowrap">
+				<div class="flex items-center justify-between border-b p-4">
 					<!-- TODO: go back to project page -->
 					<button class="flex-1 text-left text-xl font-semibold" onclick={goToTestRunSection}>
 						Test run {testRun?.id}
 					</button>
-				</div>
-				<div class="flex items-center justify-between p-4">
-					<h2 class="text-lg font-semibold">Test Suites</h2>
+
 					{#if testRun && testRun.errors.length > 0}
 						<div>
 							<Badge
@@ -255,15 +253,17 @@
 						</div>
 					{/if}
 				</div>
-				{#if testRun}
-					<TestTree
-						suites={testRun.suites}
-						{selectedSuite}
-						{selectedTest}
-						{handleSuiteSelect}
-						{handleTestSelect}
-					/>
-				{/if}
+				<div class="flex-1 overflow-auto">
+					{#if testRun}
+						<TestTree
+							suites={testRun.suites}
+							{selectedSuite}
+							{selectedTest}
+							{handleSuiteSelect}
+							{handleTestSelect}
+						/>
+					{/if}
+				</div>
 			</div>
 		</Resizable.Pane>
 		<Resizable.Handle withHandle />
