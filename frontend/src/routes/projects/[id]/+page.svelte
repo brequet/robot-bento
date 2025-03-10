@@ -91,26 +91,20 @@
 						<div class="space-y-4">
 							{#each project.testRunsSummaries as run}
 								<a
-									class="flex items-center justify-between rounded-lg border p-4 transition-all duration-300 hover:bg-gray-50 hover:shadow-sm active:scale-95"
+									class="grid grid-cols-[minmax(150px,auto)_minmax(100px,auto)_auto_auto] items-center gap-4 rounded-lg border p-4 transition-all duration-300 hover:bg-gray-50 hover:shadow-sm active:scale-95"
 									href={`/test-run/${run.testRunId}`}
 								>
-									<div class="flex items-center gap-4">
-										<p class="font-medium">{prettyFormatDate(run.testRunDate)}</p>
-										<Badge>{run.appVersion}</Badge>
+									<p class="font-medium">{prettyFormatDate(run.testRunDate)}</p>
+									<Badge class="justify-self-start">{run.appVersion}</Badge>
+									<div class="text-right">
+										<p class="text-muted-foreground text-sm">Duration</p>
+										<p class="font-medium">{run.elapsedTime}</p>
 									</div>
-									<div class="flex items-center gap-4">
-										<div class="text-right">
-											<p class="text-muted-foreground text-sm">Duration</p>
-											<p class="font-medium">{run.elapsedTime}</p>
-										</div>
-										<div class="text-right">
-											<SuccessRateProgressBar
-												passedCount={run.passedTests}
-												failedCount={run.failedTests}
-												skippedCount={run.skippedTests}
-											/>
-										</div>
-									</div>
+									<SuccessRateProgressBar
+										passedCount={run.passedTests}
+										failedCount={run.failedTests}
+										skippedCount={run.skippedTests}
+									/>
 								</a>
 							{/each}
 						</div>
