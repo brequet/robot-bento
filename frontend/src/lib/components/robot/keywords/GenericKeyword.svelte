@@ -24,7 +24,7 @@
 
 <Accordion.Root
 	type="single"
-	class="rounded-lg border p-2 text-sm"
+	class="rounded-lg border p-2 py-1 text-sm"
 	value={status && status.status === 'FAIL' ? 'item-1' : undefined}
 	onValueChange={(value) => (isOpen = value === 'item-1')}
 >
