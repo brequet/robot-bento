@@ -1,17 +1,21 @@
 <script lang="ts">
 	import type { RobotKeyword } from '$lib/types/robot';
-	import Tags from './base/Tags.svelte';
 	import Doc from './base/Doc.svelte';
 	import Keywords from './base/Keywords.svelte';
 	import Messages from './base/Messages.svelte';
 	import StatusTime from './base/StatusTime.svelte';
+	import Tags from './base/Tags.svelte';
 	import GenericKeyword from './GenericKeyword.svelte';
 
-	let { keyword }: { keyword: RobotKeyword } = $props();
-	// TODO: if "Wait Until" type, prevent child expanding expect last.
+	let { keyword, preventUnwrap = false }: { keyword: RobotKeyword; preventUnwrap?: boolean } =
+		$props();
+
+	const WAIT_UNTIL_KEYWORD_SUCCEEDS = 'Wait Until Keyword Succeeds';
+
+	let isWaitUntilKeywordSucceedsKw = keyword.name === WAIT_UNTIL_KEYWORD_SUCCEEDS;
 </script>
 
-<GenericKeyword type={keyword.type_} status={keyword.status}>
+<GenericKeyword type={keyword.type_} status={keyword.status} {preventUnwrap}>
 	{#snippet markupName()}
 		<div class="text-left">
 			{#if keyword.var.length > 0}
@@ -35,5 +39,5 @@
 
 	<Messages messages={keyword.msg} />
 
-	<Keywords keywords={keyword.keywords} />
+	<Keywords keywords={keyword.keywords} shouldOpenOnlyLastKeyword={isWaitUntilKeywordSucceedsKw} />
 </GenericKeyword>

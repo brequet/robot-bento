@@ -10,16 +10,18 @@
 		markupName,
 		type,
 		status,
-		children
+		children,
+		preventUnwrap = false
 	}: {
 		name?: string;
 		markupName?: Snippet;
 		type?: string;
 		status?: RobotStatus;
 		children: Snippet;
+		preventUnwrap?: boolean;
 	} = $props();
 
-	let isOpen = $state(status && status.status === 'FAIL');
+	let isOpen = $state((!preventUnwrap && status && status.status === 'FAIL') || false);
 </script>
 
 <Accordion.Root

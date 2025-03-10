@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { KeywordType, RobotBaseBody, RobotMessage } from '$lib/types/robot';
+	import type { KeywordType, RobotBaseBody } from '$lib/types/robot';
 	import Break from './Break.svelte';
 	import Continue from './Continue.svelte';
 	import For from './For.svelte';
@@ -12,7 +12,13 @@
 	import Var from './Var.svelte';
 	import While from './While.svelte';
 
-	let { baseBody }: { baseBody: RobotBaseBody } = $props();
+	let {
+		baseBody,
+		preventUnwrap = false
+	}: {
+		baseBody: RobotBaseBody;
+		preventUnwrap?: boolean;
+	} = $props();
 
 	let keywordType: KeywordType = getKeywordType(baseBody);
 
@@ -33,7 +39,7 @@
 </script>
 
 {#if keywordType === 'RobotKeyword'}
-	<Keyword keyword={baseBody.kw} />
+	<Keyword keyword={baseBody.kw} {preventUnwrap} />
 {:else if keywordType === 'RobotFor'}
 	<For forKw={baseBody.for} />
 {:else if keywordType === 'RobotWhile'}
