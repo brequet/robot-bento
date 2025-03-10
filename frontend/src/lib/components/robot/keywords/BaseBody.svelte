@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { KeywordType, RobotBaseBody } from '$lib/types/robot';
+	import type { KeywordType, RobotBaseBody, RobotMessage } from '$lib/types/robot';
 	import Break from './Break.svelte';
 	import Continue from './Continue.svelte';
 	import For from './For.svelte';
@@ -35,7 +35,7 @@
 {#if keywordType === 'RobotKeyword'}
 	<Keyword keyword={baseBody.kw} />
 {:else if keywordType === 'RobotFor'}
-	<For />
+	<For forKw={baseBody.for} />
 {:else if keywordType === 'RobotWhile'}
 	<While />
 {:else if keywordType === 'RobotGroup'}
@@ -53,5 +53,5 @@
 {:else if keywordType === 'RobotBreak'}
 	<Break />
 {:else if keywordType === 'RobotMessage'}
-	<Message />
+	<Message message={baseBody.message} />
 {/if}

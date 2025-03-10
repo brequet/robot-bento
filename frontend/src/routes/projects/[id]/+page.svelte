@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import SuccessRateProgressBar from '$lib/components/shared/SuccessRateProgressBar.svelte';
 	import * as Alert from '$lib/components/ui/alert/index.js';
+	import Badge from '$lib/components/ui/badge/badge.svelte';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { formatDate as prettyFormatDate } from '$lib/services/date';
 	import { getProjectById } from '$lib/services/projects';
@@ -93,9 +94,9 @@
 									class="flex items-center justify-between rounded-lg border p-4 transition-all duration-300 hover:bg-gray-50 hover:shadow-sm active:scale-95"
 									href={`/test-run/${run.testRunId}`}
 								>
-									<div>
+									<div class="flex items-center gap-4">
 										<p class="font-medium">{prettyFormatDate(run.testRunDate)}</p>
-										<p class="text-muted-foreground text-sm">Version {run.appVersion}</p>
+										<Badge>{run.appVersion}</Badge>
 									</div>
 									<div class="flex items-center gap-4">
 										<div class="text-right">
