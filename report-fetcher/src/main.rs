@@ -56,8 +56,10 @@ enum Commands {
 
 #[derive(Serialize)]
 struct Metadata {
-    appName: String,
-    appVersion: String,
+    #[serde(rename = "appName")]
+    app_name: String,
+    #[serde(rename = "appVersion")]
+    app_version: String,
 }
 
 #[tokio::main]
@@ -212,19 +214,16 @@ async fn upload_robot_data(
     info!("API URL: {}", api_url);
     info!("App Name: {}, App Version: {}", app_name, app_version);
 
-    // Create metadata JSON
     let metadata = Metadata {
-        appName: app_name.to_string(),
-        appVersion: app_version.to_string(),
+        app_name: app_name.to_string(),
+        app_version: app_version.to_string(),
     };
     let metadata_json = serde_json::to_string(&metadata).context("Failed to serialize metadata")?;
 
-    // Read file contents
     let file_contents = fs::read(&xml_path)
         .await
         .context("Failed to read output.xml")?;
 
-    // Create multipart form
     let file_part = Part::bytes(file_contents)
         .file_name(xml_path.file_name().unwrap().to_string_lossy().to_string());
     let metadata_part = Part::text(metadata_json).mime_str("application/json")?;
@@ -233,7 +232,6 @@ async fn upload_robot_data(
         .part("file", file_part)
         .part("metadata", metadata_part);
 
-    // Send the request
     let client = reqwest::Client::new();
     let response = client
         .post(api_url)

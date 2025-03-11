@@ -9,6 +9,7 @@
 	import TestDetails from '$lib/components/robot/TestDetails.svelte';
 	import TestTree from '$lib/components/robot/TestTree.svelte';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
+	import Button from '$lib/components/ui/button/button.svelte';
 	import * as Resizable from '$lib/components/ui/resizable/index.js';
 	import {
 		findSuiteByIdentifier,
@@ -23,6 +24,7 @@
 		ApiTest,
 		TestRunResponse
 	} from '$lib/types/generated';
+	import { ArrowLeft } from 'lucide-svelte';
 	import { onMount } from 'svelte';
 
 	let testRun: TestRunResponse | null = $state(null);
@@ -237,9 +239,21 @@
 			<div class="flex h-full flex-col whitespace-nowrap">
 				<div class="flex items-center justify-between border-b p-4">
 					<!-- TODO: go back to project page -->
-					<button class="flex-1 text-left text-xl font-semibold" onclick={goToTestRunSection}>
-						Test run {testRun?.id}
-					</button>
+					<div>
+						<Button
+							variant="ghost"
+							size="icon"
+							onclick={() => goto(`/projects/${testRun?.projectId}`)}
+						>
+							<ArrowLeft />
+						</Button>
+						<button
+							class="hover:bg-accent hover:text-accent-foreground flex-1 rounded-md p-2 text-left text-xl font-semibold transition-colors"
+							onclick={goToTestRunSection}
+						>
+							Test run {testRun?.id}
+						</button>
+					</div>
 
 					{#if testRun && testRun.errors.length > 0}
 						<div>

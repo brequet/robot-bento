@@ -5,7 +5,6 @@ use crate::{
     services::parser::{self}};
 use serde_json::Value;
 use sqlx::{query_as, query_file, query_file_as, query_scalar, PgPool};
-use tracing::info;
 use crate::models::robot::db::StatisticTypeDB;
 
 enum SuiteKeywordType {
@@ -73,6 +72,7 @@ impl RobotRepository {
             models::robot::db::TestRunDB,
             r#"
             SELECT tr.id,
+                tr.project_id,
                 tr.rpa,
                 tr.generator,
                 tr.generated_date,

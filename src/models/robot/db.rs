@@ -46,6 +46,7 @@ impl ProjectTestSummaryDB {
 #[derive(sqlx::FromRow)]
 pub struct TestRunDB {
     pub id: i32,
+    pub project_id: i32,
     pub rpa: bool,
     pub generator: String,
     pub generated_date: NaiveDateTime,
@@ -63,6 +64,7 @@ impl TestRunDB {
     ) -> SavedTestRun {
         SavedTestRun {
             id: self.id,
+            project_id: self.project_id,
             rpa: self.rpa,
             generator: self.generator.clone(),
             generated_date: self.generated_date,

@@ -9,6 +9,7 @@ use super::domain::StatisticType;
 #[serde(rename_all = "camelCase")]
 pub struct TestRunResponse {
     pub id: i32,
+    pub project_id: i32,
     pub rpa: bool,
     pub generator: String,
     pub generated_date: String,

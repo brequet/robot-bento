@@ -52,6 +52,11 @@ export interface ApiSuite {
 	tests: ApiTest[];
 }
 
+export interface ApiSuiteKeywords {
+	setupKeyword?: Value;
+	teardownKeyword?: Value;
+}
+
 export interface ApiTestRunSummary {
 	testRunId: number;
 	testRunDate: string;
@@ -82,6 +87,7 @@ export interface ProjectResponse {
 
 export interface TestRunResponse {
 	id: number;
+	projectId: number;
 	rpa: boolean;
 	generator: string;
 	generatedDate: string;

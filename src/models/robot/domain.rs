@@ -42,6 +42,7 @@ impl ProjectTestRunSummary {
 
 pub struct SavedTestRun {
     pub id: i32,
+    pub project_id: i32,
     pub rpa: bool,
     pub generator: String,
     pub generated_date: NaiveDateTime,
@@ -57,6 +58,7 @@ impl SavedTestRun {
     pub fn to_response(&self) -> TestRunResponse {
         TestRunResponse {
             id: self.id,
+            project_id: self.project_id,
             rpa: self.rpa,
             generator: self.generator.clone(),
             generated_date: utils::date::format_datetime(self.generated_date),
