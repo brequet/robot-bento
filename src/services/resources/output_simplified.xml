@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.1 (Python 3.10.4 on win32)" generated="20241217 11:27:23.676" rpa="false" schemaversion="4">
+	<suite id="s1" name="Acceptance" source="D:\robot-run\tests\acceptance">
+		<kw name="Acceptance Setup" library="init-keywords" type="SETUP">
+			<kw name="Close Browser" library="Browser">
+				<msg timestamp="20241217 11:37:58.211" level="INFO">Closed all browsers</msg>
+				<arg>ALL</arg>
+				<tag>BrowserControl</tag>
+				<tag>Setter</tag>
+				<doc>Closes the current browser.</doc>
+				<for flavor="IN">
+					<iter>
+						<kw name="Continue For Loop If" library="BuiltIn">
+							<arg>('${aVar}[aList]' == '${aVar}[anotherList]')</arg>
+							<doc>Skips the current FOR loop iteration if the ``condition`` is true.</doc>
+							<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.885"/>
+						</kw>
+						<var name="${aVar}"/>
+						<var name="${anId}"/>
+						<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.886"/>
+					</iter>
+					<iter>
+						<kw name="Continue For Loop If" library="BuiltIn">
+							<arg>('${aVar}[aList]' == '${aVar}[anotherList]')</arg>
+							<doc>Skips the current FOR loop iteration if the ``condition`` is true.</doc>
+							<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.885"/>
+						</kw>
+						<var name="${aVar}"/>
+						<var name="${anId}"/>
+						<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.886"/>
+					</iter>
+					<var>${aVar}</var>
+					<var>${anId}</var>
+					<value>@{aList}</value>
+					<value>0</value>
+					<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.886"/>
+				</for>
+				<status status="PASS" starttime="20241217 11:37:58.206" endtime="20241217 11:37:58.211"/>
+			</kw>
+			<if>
+				<branch type="IF" condition="not ${SCREENSHOT NEEDED}">
+					<kw name="Register Keyword To Run On Failure">
+						<msg timestamp="20241217 11:27:26.201" level="INFO">Keyword will not be run on failure.</msg>
+						<var>${dummyVar}</var>
+						<arg>${None}</arg>
+						<tag>Config</tag>
+						<doc>Sets the keyword to execute, when a Browser keyword fails.</doc>
+						<status status="PASS" starttime="20241217 11:27:26.200" endtime="20241217 11:27:26.201"/>
+					</kw>
+					<status status="PASS" starttime="20241217 11:27:26.198" endtime="20241217 11:27:26.201"/>
+				</branch>
+				<branch type="ELSE">
+					<kw name="Should Not Match Regexp" library="BuiltIn">
+						<arg>"${response.status_code}"</arg>
+						<arg>${ERROR CODE PATTERN}</arg>
+						<doc>Fails if ``string`` matches ``pattern`` as a regular expression.</doc>
+						<status status="NOT RUN" starttime="20241217 11:27:26.279" endtime="20241217 11:27:26.280"/>
+					</kw>
+					<status status="NOT RUN" starttime="20241217 11:27:26.279" endtime="20241217 11:27:26.280"/>
+				</branch>
+				<status status="PASS" starttime="20241217 11:27:26.198" endtime="20241217 11:27:26.201"/>
+			</if>
+			<kw name="Close Browser" library="Browser">
+				<msg timestamp="20241217 11:37:58.211" level="INFO">Closed all browsers</msg>
+				<arg>ALL</arg>
+				<tag>BrowserControl</tag>
+				<tag>Setter</tag>
+				<doc>Closes the current browser.</doc>
+				<status status="PASS" starttime="20241217 11:37:58.206" endtime="20241217 11:37:58.211"/>
+			</kw>
+			<if>
+				<branch type="IF" condition="'${expected_status}' == 'any'">
+					<kw name="Close Browser" library="Browser">
+						<msg timestamp="20241217 11:37:58.211" level="INFO">Closed all browsers</msg>
+						<arg>ALL</arg>
+						<tag>BrowserControl</tag>
+						<tag>Setter</tag>
+						<doc>Closes the current browser.</doc>
+						<status status="PASS" starttime="20241217 11:37:58.206" endtime="20241217 11:37:58.211"/>
+					</kw>
+					<for flavor="IN">
+						<iter>
+							<kw name="Continue For Loop If" library="BuiltIn">
+								<arg>('${aVar}[aList]' == '${aVar}[anotherList]')</arg>
+								<doc>Skips the current FOR loop iteration if the ``condition`` is true.</doc>
+								<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.885"/>
+							</kw>
+							<var name="${aVar}"/>
+							<var name="${anId}"/>
+							<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.886"/>
+						</iter>
+						<iter>
+							<kw name="Continue For Loop If" library="BuiltIn">
+								<arg>('${aVar}[aList]' == '${aVar}[anotherList]')</arg>
+								<doc>Skips the current FOR loop iteration if the ``condition`` is true.</doc>
+								<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.885"/>
+							</kw>
+							<var name="${aVar}"/>
+							<var name="${anId}"/>
+							<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.886"/>
+						</iter>
+						<var>${aVar}</var>
+						<var>${anId}</var>
+						<value>@{aList}</value>
+						<value>0</value>
+						<status status="NOT RUN" starttime="20241217 11:28:10.884" endtime="20241217 11:28:10.886"/>
+					</for>
+					<kw name="Close Browser" library="Browser">
+						<msg timestamp="20241217 11:37:58.211" level="INFO">Closed all browsers</msg>
+						<arg>ALL</arg>
+						<tag>BrowserControl</tag>
+						<tag>Setter</tag>
+						<doc>Closes the current browser.</doc>
+						<status status="PASS" starttime="20241217 11:37:58.206" endtime="20241217 11:37:58.211"/>
+					</kw>
+					<return>
+						<value>${response}</value>
+						<status status="NOT RUN" starttime="20241217 11:27:26.274" endtime="20241217 11:27:26.274"/>
+					</return>
+					<status status="NOT RUN" starttime="20241217 11:27:26.273" endtime="20241217 11:27:26.274"/>
+				</branch>
+				<status status="PASS" starttime="20241217 11:27:26.273" endtime="20241217 11:27:26.274"/>
+			</if>
+			<return>
+				<value>${response}</value>
+				<status status="PASS" starttime="20241217 11:27:26.280" endtime="20241217 11:27:26.280"/>
+			</return>
+			<status status="PASS" starttime="20241217 11:37:58.205" endtime="20241217 11:37:58.211"/>
+		</kw>
+		<suite id="s1-s1" name="Cat 1" source="D:\Cat 1">
+			<suite id="s1-s1-s1" name="History" source="D:\history.robot">
+				<kw name="Vitek2 Workflow Suite Setup" type="SETUP">
+					<status status="PASS" starttime="20241217 11:33:07.987" endtime="20241217 11:35:48.145"/>
+				</kw>
+				<test id="s1-s1-s1-t1" name="History Test" line="11">
+					<kw name="Get Current Date" library="DateTime">
+						<msg timestamp="20241217 11:37:05.764" level="INFO">${currentDateTime} = 2024-12-17 11:37:05.764</msg>
+						<var>${currentDateTime}</var>
+						<doc>Returns current local or UTC time with an optional increment.</doc>
+						<status status="PASS" starttime="20241217 11:37:05.763" endtime="20241217 11:37:05.764"/>
+					</kw>
+					<doc>The aim of this test is to do something</doc>
+					<tag>Regression</tag>
+					<tag>1324</tag>
+					<status status="PASS" starttime="20241217 11:32:57.308" endtime="20241217 11:33:07.942"/>
+				</test>
+				<kw name="Vitek2 Workflow Suite TearDown" type="TEARDOWN">
+					<status status="PASS" starttime="20241217 11:33:07.987" endtime="20241217 11:35:48.145"/>
+				</kw>
+				<status status="FAIL" starttime="20241217 11:27:23.679" endtime="20241217 11:37:58.211"/>
+			</suite>
+			<status status="FAIL" starttime="20241217 11:27:23.679" endtime="20241217 11:37:58.211"/>
+		</suite>
+		<status status="FAIL" starttime="20241217 11:27:23.679" endtime="20241217 11:37:58.211"/>
+	</suite>
+	<statistics>
+		<total>
+			<stat pass="7" fail="1" skip="0">All Tests</stat>
+		</total>
+		<tag>
+			<stat pass="2" fail="0" skip="0">Cat 1</stat>
+			<stat pass="1" fail="0" skip="0">History</stat>
+			<stat pass="3" fail="0" skip="0">ABC</stat>
+			<stat pass="4" fail="0" skip="0">Regression</stat>
+			<stat pass="1" fail="0" skip="0">Archive</stat>
+			<stat pass="2" fail="1" skip="0">something</stat>
+			<stat pass="1" fail="0" skip="0">testcase=1324</stat>
+			<stat pass="1" fail="0" skip="0">testcase=1383</stat>
+			<stat pass="1" fail="0" skip="0">testcase=1394</stat>
+			<stat pass="1" fail="0" skip="0">testcase=1395</stat>
+			<stat pass="1" fail="0" skip="0">testcase=1423</stat>
+			<stat pass="1" fail="0" skip="0">testcase=1424</stat>
+			<stat pass="1" fail="0" skip="0">testcase=2186</stat>
+			<stat pass="1" fail="0" skip="0">compA</stat>
+			<stat pass="5" fail="0" skip="0">compB</stat>
+		</tag>
+		<suite>
+			<stat pass="7" fail="1" skip="0" id="s1" name="Acceptance">Acceptance</stat>
+			<stat pass="4" fail="0" skip="0" id="s1-s1" name="Cat1">Acceptance.Cat1</stat>
+			<stat pass="1" fail="0" skip="0" id="s1-s1-s1" name="Cat1-History">Acceptance.Cat1.Cat1-History</stat>
+			<stat pass="3" fail="0" skip="0" id="s1-s1-s2" name="Laptop-Integration">Acceptance.Cat1.Laptop-Integration</stat>
+			<stat pass="2" fail="1" skip="0" id="s1-s2" name="Weather">Acceptance.Weather</stat>
+			<stat pass="2" fail="1" skip="0" id="s1-s2-s1" name="Staining">Acceptance.Weather.Staining</stat>
+			<stat pass="1" fail="0" skip="0" id="s1-s3" name="Configuration">Acceptance.Configuration</stat>
+			<stat pass="1" fail="0" skip="0" id="s1-s3-s1" name="Archiving">Acceptance.Configuration.Archiving</stat>
+		</suite>
+	</statistics>
+	<errors>
+		<msg timestamp="20250115 10:52:56.694" level="WARN">Keyword 'DatabaseLibrary.Row Count Is Greater Than X' is deprecated. Use new `Check Row Count` keyword with assertion engine instead.
+The deprecated keyword will be removed in future versions.</msg>
+		<msg timestamp="20250115 13:34:58.150" level="WARN">Overwriting not closed connection.</msg>
+	</errors>
+</robot>
